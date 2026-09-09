@@ -275,90 +275,184 @@
             }
 
             if (addedCount > 0) {
-                showToast(`成功新增 ${addedCount} 個檔案`, 'success');
-                await loadAndRenderFiles();
-            } else if (errorCount > 0) {
-                showToast('請上傳 .pdf 或 .rtf 格式檔案', 'error');
-            }
+            showToast(`成功新增 ${addedCount} 個檔案`, 'success');
+            await loadAndRenderFiles();
+        } else if (errorCount > 0) {
+            showToast('請上傳 .pdf 或 .rtf 格式檔案', 'error');
+        }
+    }
+
+    // Multilingual RTF to HTML Parser (Supports Colors, Bold, Italic, Chinese Big5/GBK, Japanese Shift-JIS, Unicode)
+    function parseRTFToHTML(rtfString) {
+        if (!rtfString) return '';
+        
+        // 1. Detect code page from \ansicpg
+        let encoding = 'utf-8';
+        const cpgMatch = rtfString.match(/\\ansicpg(\d+)/);
+        if (cpgMatch) {
+            const cpg = parseInt(cpgMatch[1], 10);
+            const cpgMap = {
+                950: 'big5',         // Traditional Chinese
+                936: 'gbk',          // Simplified Chinese
+                932: 'shift-jis',    // Japanese
+                949: 'euc-kr',       // Korean
+                1252: 'windows-1252',// Western European
+                1250: 'windows-1250',// Central European
+                1251: 'windows-1251',// Cyrillic
+                65001: 'utf-8'       // UTF-8
+            };
+            if (cpgMap[cpg]) encoding = cpgMap[cpg];
+        } else {
+            encoding = 'big5';
         }
 
-        // Multilingual RTF Parser (Supports Chinese Big5/GBK, Japanese Shift-JIS, Unicode, English)
-        function parseRTFToText(rtfString) {
-            if (!rtfString) return '';
-            
-            // 1. Detect code page from \ansicpg
-            let encoding = 'utf-8';
-            const cpgMatch = rtfString.match(/\\ansicpg(\d+)/);
-            if (cpgMatch) {
-                const cpg = parseInt(cpgMatch[1], 10);
-                const cpgMap = {
-                    950: 'big5',         // Traditional Chinese
-                    936: 'gbk',          // Simplified Chinese
-                    932: 'shift-jis',    // Japanese
-                    949: 'euc-kr',       // Korean
-                    1252: 'windows-1252',// Western European
-                    1250: 'windows-1250',// Central European
-                    1251: 'windows-1251',// Cyrillic
-                    65001: 'utf-8'       // UTF-8
-                };
-                if (cpgMap[cpg]) encoding = cpgMap[cpg];
-            } else {
-                // Default fallback for Asian systems if not explicitly set
-                encoding = 'big5';
-            }
-
-            // 2. Remove RTF metadata tables & headers
-            let text = rtfString.replace(/\{\\fonttbl[\s\S]*?\}/g, '')
-                                .replace(/\{\\colortbl[\s\S]*?\}/g, '')
-                                .replace(/\{\\stylesheet[\s\S]*?\}/g, '')
-                                .replace(/\{\\\*\\generator[\s\S]*?\}/g, '')
-                                .replace(/\{\\\*\\info[\s\S]*?\}/g, '')
-                                .replace(/\{\\pict[\s\S]*?\}/g, '');
-
-            // 3. Track uc parameter (fallback byte count after unicode escapes, default 1)
-            let ucSkip = 1;
-            text = text.replace(/\\uc(\d+)/g, (m, count) => {
-                ucSkip = parseInt(count, 10);
-                return '';
-            });
-
-            // 4. Decode Unicode escape characters (\uN where N can be negative in 16-bit signed representation)
-            const unicodeRegex = new RegExp(`\\\\u(-?\\d+)(?:\\\\'[0-9a-fA-F]{2}|.|){0,${ucSkip}}`, 'g');
-            text = text.replace(unicodeRegex, (match, codeStr) => {
-                let code = parseInt(codeStr, 10);
-                if (code < 0) code += 65536; // Convert 16-bit signed integer to character code
-                return String.fromCharCode(code);
-            });
-
-            // 5. Decode consecutive hex byte sequences (\'xx\'yy) using TextDecoder
-            text = text.replace(/(?:\\'[0-9a-fA-F]{2})+/g, (match) => {
-                const hexes = match.split("\\'").filter(Boolean);
-                const bytes = new Uint8Array(hexes.map(h => parseInt(h, 16)));
-                try {
-                    return new TextDecoder(encoding).decode(bytes);
-                } catch (e) {
-                    try {
-                        return new TextDecoder('utf-8').decode(bytes);
-                    } catch (err) {
-                        return match;
-                    }
+        // 2. Extract Color Table (\colortbl)
+        const colorTable = [];
+        const colortblMatch = rtfString.match(/\{\\colortbl\s*;?([\s\S]*?)\}/);
+        if (colortblMatch) {
+            const entries = colortblMatch[1].split(';');
+            entries.forEach(entry => {
+                const r = entry.match(/\\red(\d+)/);
+                const g = entry.match(/\\green(\d+)/);
+                const b = entry.match(/\\blue(\d+)/);
+                if (r && g && b) {
+                    colorTable.push(`rgb(${r[1]}, ${g[1]}, ${b[1]})`);
+                } else {
+                    colorTable.push(null); // default index or auto color
                 }
             });
-
-            // 6. Convert RTF formatting linebreaks & tabs
-            text = text.replace(/\\par\b/g, '\n')
-                       .replace(/\\line\b/g, '\n')
-                       .replace(/\\tab\b/g, '\t');
-
-            // 7. Strip remaining RTF control tags and curly braces
-            text = text.replace(/\\[a-zA-Z0-9-]+\s?/g, '')
-                       .replace(/[\{\}]/g, '');
-
-            return text.trim();
         }
 
-        // Render File Cards List
-        async function loadAndRenderFiles() {
+        // 3. Remove non-text RTF metadata tables & headers
+        let text = rtfString.replace(/\{\\fonttbl[\s\S]*?\}/g, '')
+                            .replace(/\{\\colortbl[\s\S]*?\}/g, '')
+                            .replace(/\{\\stylesheet[\s\S]*?\}/g, '')
+                            .replace(/\{\\\*\\generator[\s\S]*?\}/g, '')
+                            .replace(/\{\\\*\\info[\s\S]*?\}/g, '')
+                            .replace(/\{\\pict[\s\S]*?\}/g, '');
+
+        // 4. Track uc parameter
+        let ucSkip = 1;
+        text = text.replace(/\\uc(\d+)/g, (m, count) => {
+            ucSkip = parseInt(count, 10);
+            return '';
+        });
+
+        // 5. Decode Unicode escape characters (\uN)
+        const unicodeRegex = new RegExp(`\\\\u(-?\\d+)(?:\\\\'[0-9a-fA-F]{2}|.|){0,${ucSkip}}`, 'g');
+        text = text.replace(unicodeRegex, (match, codeStr) => {
+            let code = parseInt(codeStr, 10);
+            if (code < 0) code += 65536;
+            return String.fromCharCode(code);
+        });
+
+        // 6. Decode consecutive hex byte sequences (\'xx) using TextDecoder
+        text = text.replace(/(?:\\'[0-9a-fA-F]{2})+/g, (match) => {
+            const hexes = match.split("\\'").filter(Boolean);
+            const bytes = new Uint8Array(hexes.map(h => parseInt(h, 16)));
+            try {
+                return new TextDecoder(encoding).decode(bytes);
+            } catch (e) {
+                try {
+                    return new TextDecoder('utf-8').decode(bytes);
+                } catch (err) {
+                    return match;
+                }
+            }
+        });
+
+        // 7. Escape HTML special characters
+        text = text.replace(/&/g, '&amp;')
+                   .replace(/</g, '&lt;')
+                   .replace(/>/g, '&gt;');
+
+        // 8. Parse RTF formatting tags and groups into HTML elements
+        let state = { color: null, bold: false, italic: false, underline: false };
+        const stack = [];
+        let currentSpanOpen = false;
+        let resultHtml = '';
+
+        function openSpan(newState) {
+            const styles = [];
+            if (newState.color) styles.push(`color: ${newState.color}`);
+            if (newState.bold) styles.push('font-weight: bold');
+            if (newState.italic) styles.push('font-style: italic');
+            if (newState.underline) styles.push('text-decoration: underline');
+
+            if (styles.length > 0) {
+                resultHtml += `<span style="${styles.join('; ')}">`;
+                currentSpanOpen = true;
+            } else {
+                currentSpanOpen = false;
+            }
+        }
+
+        function closeSpan() {
+            if (currentSpanOpen) {
+                resultHtml += '</span>';
+                currentSpanOpen = false;
+            }
+        }
+
+        const tokenRegex = /\\([a-zA-Z0-9-]+)\s?|\\([\\{}])|([{}])|([^\r\n\\{}]+)|(\r?\n)/g;
+        let match;
+
+        while ((match = tokenRegex.exec(text)) !== null) {
+            const controlWord = match[1];
+            const escapedChar = match[2];
+            const groupChar = match[3];
+            const plainText = match[4];
+
+            if (controlWord !== undefined) {
+                closeSpan();
+                if (controlWord === 'par' || controlWord === 'line') {
+                    resultHtml += '<br>';
+                } else if (controlWord === 'tab') {
+                    resultHtml += '&emsp;';
+                } else if (controlWord.startsWith('cf')) {
+                    const colorIdx = parseInt(controlWord.substring(2), 10);
+                    if (!isNaN(colorIdx) && colorTable[colorIdx]) {
+                        state.color = colorTable[colorIdx];
+                    } else {
+                        state.color = null;
+                    }
+                } else if (controlWord === 'b') {
+                    state.bold = true;
+                } else if (controlWord === 'b0') {
+                    state.bold = false;
+                } else if (controlWord === 'i') {
+                    state.italic = true;
+                } else if (controlWord === 'i0') {
+                    state.italic = false;
+                } else if (controlWord === 'ul') {
+                    state.underline = true;
+                } else if (controlWord === 'ulnone') {
+                    state.underline = false;
+                }
+                openSpan(state);
+            } else if (escapedChar !== undefined) {
+                resultHtml += escapedChar;
+            } else if (groupChar !== undefined) {
+                if (groupChar === '{') {
+                    stack.push({ ...state });
+                } else if (groupChar === '}') {
+                    if (stack.length > 0) {
+                        closeSpan();
+                        state = stack.pop();
+                        openSpan(state);
+                    }
+                }
+            } else if (plainText !== undefined) {
+                resultHtml += plainText;
+            }
+        }
+
+        closeSpan();
+        return resultHtml.trim();
+    }
+
+    // Render File Cards List
+    async function loadAndRenderFiles() {
             storedFiles = await getAllFilesFromDB();
             renderFileList();
         }
@@ -467,8 +561,8 @@
                 modalIcon.innerHTML = '<i class="fa-solid fa-file-lines text-blue-500"></i>';
                 try {
                     const rtfText = await file.blob.text();
-                    const parsedText = parseRTFToText(rtfText);
-                    rtfViewer.innerText = parsedText || '此 RTF 文件為空或未能解析文字內容。';
+                    const parsedHtml = parseRTFToHTML(rtfText);
+                    rtfViewer.innerHTML = parsedHtml || '此 RTF 文件為空或未能解析文字內容。';
                     rtfViewer.classList.remove('hidden');
                 } catch (e) {
                     fallbackViewer.classList.remove('hidden');
