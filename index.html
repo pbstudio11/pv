@@ -282,11 +282,10 @@
         }
     }
 
-    // Multilingual RTF to HTML Parser (Supports Colors, Bold, Italic, Chinese Big5/GBK, Japanese Shift-JIS, Unicode)
+    // Multilingual RTF to HTML Parser (Supports Colors, Bold, Italic, CJK, Unicode, Group Scoping)
     function parseRTFToHTML(rtfString) {
         if (!rtfString) return '';
         
-        // 1. Detect code page from \ansicpg
         let encoding = 'utf-8';
         const cpgMatch = rtfString.match(/\\ansicpg(\d+)/);
         if (cpgMatch) {
@@ -306,39 +305,74 @@
             encoding = 'big5';
         }
 
-        // 2. Extract Color Table (\colortbl)
         const colorTable = [];
-        const colortblMatch = rtfString.match(/\{\\colortbl\s*;?([\s\S]*?)\}/);
+        const colortblMatch = rtfString.match(/\{\\colortbl\s*([\s\S]*?)\}/);
         if (colortblMatch) {
             const entries = colortblMatch[1].split(';');
-            entries.forEach(entry => {
+            entries.forEach((entry, idx) => {
                 const r = entry.match(/\\red(\d+)/);
                 const g = entry.match(/\\green(\d+)/);
                 const b = entry.match(/\\blue(\d+)/);
                 if (r && g && b) {
-                    colorTable.push(`rgb(${r[1]}, ${g[1]}, ${b[1]})`);
+                    colorTable[idx] = `rgb(${r[1]}, ${g[1]}, ${b[1]})`;
                 } else {
-                    colorTable.push(null); // default index or auto color
+                    colorTable[idx] = null; // Index 0 or empty slots are default text color
                 }
             });
         }
 
-        // 3. Remove non-text RTF metadata tables & headers
-        let text = rtfString.replace(/\{\\fonttbl[\s\S]*?\}/g, '')
-                            .replace(/\{\\colortbl[\s\S]*?\}/g, '')
-                            .replace(/\{\\stylesheet[\s\S]*?\}/g, '')
-                            .replace(/\{\\\*\\generator[\s\S]*?\}/g, '')
-                            .replace(/\{\\\*\\info[\s\S]*?\}/g, '')
-                            .replace(/\{\\pict[\s\S]*?\}/g, '');
+        function stripGroup(rtf, groupName) {
+            let searchStr = '\\' + groupName;
+            let pos = 0;
+            while ((pos = rtf.indexOf(searchStr, pos)) !== -1) {
+                let openBrace = rtf.lastIndexOf('{', pos);
+                if (openBrace !== -1) {
+                    let depth = 1;
+                    let end = openBrace + 1;
+                    while (end < rtf.length && depth > 0) {
+                        if (rtf[end] === '{' && rtf[end-1] !== '\\') depth++;
+                        else if (rtf[end] === '}' && rtf[end-1] !== '\\') depth--;
+                        end++;
+                    }
+                    if (depth === 0) {
+                        rtf = rtf.substring(0, openBrace) + rtf.substring(end);
+                        pos = openBrace;
+                        continue;
+                    }
+                }
+                pos += searchStr.length;
+            }
+            return rtf;
+        }
 
-        // 4. Track uc parameter
+        let text = rtfString;
+        ['fonttbl', 'colortbl', 'stylesheet', 'info', 'pict', 'header', 'footer', 'footnote'].forEach(g => {
+            text = stripGroup(text, g);
+        });
+
+        // Strip ignorable groups {\* ...}
+        let pos = 0;
+        while ((pos = text.search(/\{\\\*/)) !== -1) {
+            let depth = 1;
+            let end = pos + 1;
+            while (end < text.length && depth > 0) {
+                if (text[end] === '{' && text[end-1] !== '\\') depth++;
+                else if (text[end] === '}' && text[end-1] !== '\\') depth--;
+                end++;
+            }
+            if (depth === 0) {
+                text = text.substring(0, pos) + text.substring(end);
+            } else {
+                break;
+            }
+        }
+
         let ucSkip = 1;
         text = text.replace(/\\uc(\d+)/g, (m, count) => {
             ucSkip = parseInt(count, 10);
             return '';
         });
 
-        // 5. Decode Unicode escape characters (\uN)
         const unicodeRegex = new RegExp(`\\\\u(-?\\d+)(?:\\\\'[0-9a-fA-F]{2}|.|){0,${ucSkip}}`, 'g');
         text = text.replace(unicodeRegex, (match, codeStr) => {
             let code = parseInt(codeStr, 10);
@@ -346,7 +380,6 @@
             return String.fromCharCode(code);
         });
 
-        // 6. Decode consecutive hex byte sequences (\'xx) using TextDecoder
         text = text.replace(/(?:\\'[0-9a-fA-F]{2})+/g, (match) => {
             const hexes = match.split("\\'").filter(Boolean);
             const bytes = new Uint8Array(hexes.map(h => parseInt(h, 16)));
@@ -361,37 +394,25 @@
             }
         });
 
-        // 7. Escape HTML special characters
-        text = text.replace(/&/g, '&amp;')
-                   .replace(/</g, '&lt;')
-                   .replace(/>/g, '&gt;');
-
-        // 8. Parse RTF formatting tags and groups into HTML elements
         let state = { color: null, bold: false, italic: false, underline: false };
         const stack = [];
-        let currentSpanOpen = false;
         let resultHtml = '';
 
-        function openSpan(newState) {
+        function renderChunk(plainText) {
+            if (!plainText) return '';
+            const escaped = plainText.replace(/&/g, '&amp;')
+                                     .replace(/</g, '&lt;')
+                                     .replace(/>/g, '&gt;');
             const styles = [];
-            if (newState.color) styles.push(`color: ${newState.color}`);
-            if (newState.bold) styles.push('font-weight: bold');
-            if (newState.italic) styles.push('font-style: italic');
-            if (newState.underline) styles.push('text-decoration: underline');
+            if (state.color) styles.push(`color: ${state.color}`);
+            if (state.bold) styles.push('font-weight: bold');
+            if (state.italic) styles.push('font-style: italic');
+            if (state.underline) styles.push('text-decoration: underline');
 
             if (styles.length > 0) {
-                resultHtml += `<span style="${styles.join('; ')}">`;
-                currentSpanOpen = true;
-            } else {
-                currentSpanOpen = false;
+                return `<span style="${styles.join('; ')}">${escaped}</span>`;
             }
-        }
-
-        function closeSpan() {
-            if (currentSpanOpen) {
-                resultHtml += '</span>';
-                currentSpanOpen = false;
-            }
+            return escaped;
         }
 
         const tokenRegex = /\\([a-zA-Z0-9-]+)\s?|\\([\\{}])|([{}])|([^\r\n\\{}]+)|(\r?\n)/g;
@@ -404,14 +425,14 @@
             const plainText = match[4];
 
             if (controlWord !== undefined) {
-                closeSpan();
                 if (controlWord === 'par' || controlWord === 'line') {
                     resultHtml += '<br>';
                 } else if (controlWord === 'tab') {
                     resultHtml += '&emsp;';
                 } else if (controlWord.startsWith('cf')) {
-                    const colorIdx = parseInt(controlWord.substring(2), 10);
-                    if (!isNaN(colorIdx) && colorTable[colorIdx]) {
+                    const numStr = controlWord.substring(2);
+                    const colorIdx = numStr === '' ? 0 : parseInt(numStr, 10);
+                    if (!isNaN(colorIdx) && colorTable[colorIdx] !== undefined) {
                         state.color = colorTable[colorIdx];
                     } else {
                         state.color = null;
@@ -429,25 +450,21 @@
                 } else if (controlWord === 'ulnone') {
                     state.underline = false;
                 }
-                openSpan(state);
             } else if (escapedChar !== undefined) {
-                resultHtml += escapedChar;
+                resultHtml += renderChunk(escapedChar);
             } else if (groupChar !== undefined) {
                 if (groupChar === '{') {
                     stack.push({ ...state });
                 } else if (groupChar === '}') {
                     if (stack.length > 0) {
-                        closeSpan();
                         state = stack.pop();
-                        openSpan(state);
                     }
                 }
             } else if (plainText !== undefined) {
-                resultHtml += plainText;
+                resultHtml += renderChunk(plainText);
             }
         }
 
-        closeSpan();
         return resultHtml.trim();
     }
 
