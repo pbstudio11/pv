@@ -11,7 +11,12 @@
     <!-- Google Fonts Inter -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Inter', sans-serif; }
+        body { 
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang TC", "Microsoft JhengHei", "Meiryo", "Hiragino Sans", sans-serif; 
+        }
+        .rtf-font-stack {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "PingFang TC", "Microsoft JhengHei", "Meiryo", "Hiragino Sans", "Noto Sans CJK TC", "Segoe UI", sans-serif;
+        }
         .custom-scrollbar::-webkit-scrollbar {
             width: 6px;
             height: 6px;
@@ -136,7 +141,7 @@
                 <iframe id="pdf-frame" class="w-full h-full border-0 hidden"></iframe>
 
                 <!-- RTF Viewer Container -->
-                <div id="rtf-viewer" class="w-full h-full p-6 sm:p-8 overflow-y-auto custom-scrollbar bg-white font-mono text-sm leading-relaxed text-slate-800 hidden whitespace-pre-wrap">
+                <div id="rtf-viewer" class="w-full h-full p-6 sm:p-8 overflow-y-auto custom-scrollbar bg-white rtf-font-stack text-sm leading-relaxed text-slate-800 hidden whitespace-pre-wrap">
                 </div>
 
                 <!-- Unsupported / Error Viewer -->
@@ -277,32 +282,78 @@
             }
         }
 
-        // Simple RTF Parser helper (Strips basic formatting tags for plain view)
+        // Multilingual RTF Parser (Supports Chinese Big5/GBK, Japanese Shift-JIS, Unicode, English)
         function parseRTFToText(rtfString) {
             if (!rtfString) return '';
             
-            // Remove RTF headers, font definitions, color tables
-            let text = rtfString.replace(/\{\*\\?\w+(;|\s.*?\})?/g, '');
-            text = text.replace(/\\colortbl[\s\S]*?;/g, '');
-            text = text.replace(/\\fonttbl[\s\S]*?\}/g, '');
-            
-            // Convert paragraphs/lines
-            text = text.replace(/\\par\b/g, '\n');
-            text = text.replace(/\\line\b/g, '\n');
-            text = text.replace(/\\tab\b/g, '    ');
+            // 1. Detect code page from \ansicpg
+            let encoding = 'utf-8';
+            const cpgMatch = rtfString.match(/\\ansicpg(\d+)/);
+            if (cpgMatch) {
+                const cpg = parseInt(cpgMatch[1], 10);
+                const cpgMap = {
+                    950: 'big5',         // Traditional Chinese
+                    936: 'gbk',          // Simplified Chinese
+                    932: 'shift-jis',    // Japanese
+                    949: 'euc-kr',       // Korean
+                    1252: 'windows-1252',// Western European
+                    1250: 'windows-1250',// Central European
+                    1251: 'windows-1251',// Cyrillic
+                    65001: 'utf-8'       // UTF-8
+                };
+                if (cpgMap[cpg]) encoding = cpgMap[cpg];
+            } else {
+                // Default fallback for Asian systems if not explicitly set
+                encoding = 'big5';
+            }
 
-            // Strip other backslash formatting commands (\b, \i, \fs24, etc)
-            text = text.replace(/\\[a-z0-9]+\b\s?/gi, '');
+            // 2. Remove RTF metadata tables & headers
+            let text = rtfString.replace(/\{\\fonttbl[\s\S]*?\}/g, '')
+                                .replace(/\{\\colortbl[\s\S]*?\}/g, '')
+                                .replace(/\{\\stylesheet[\s\S]*?\}/g, '')
+                                .replace(/\{\\\*\\generator[\s\S]*?\}/g, '')
+                                .replace(/\{\\\*\\info[\s\S]*?\}/g, '')
+                                .replace(/\{\\pict[\s\S]*?\}/g, '');
 
-            // Decode special escaped hex chars (\'xx)
-            text = text.replace(/\\'[0-9a-fA-F]{2}/g, (match) => {
-                const code = parseInt(match.substring(2), 16);
+            // 3. Track uc parameter (fallback byte count after unicode escapes, default 1)
+            let ucSkip = 1;
+            text = text.replace(/\\uc(\d+)/g, (m, count) => {
+                ucSkip = parseInt(count, 10);
+                return '';
+            });
+
+            // 4. Decode Unicode escape characters (\uN where N can be negative in 16-bit signed representation)
+            const unicodeRegex = new RegExp(`\\\\u(-?\\d+)(?:\\\\'[0-9a-fA-F]{2}|.|){0,${ucSkip}}`, 'g');
+            text = text.replace(unicodeRegex, (match, codeStr) => {
+                let code = parseInt(codeStr, 10);
+                if (code < 0) code += 65536; // Convert 16-bit signed integer to character code
                 return String.fromCharCode(code);
             });
 
-            // Strip outer brackets and remaining backslashes
-            text = text.replace(/[\{\}]/g, '');
-            
+            // 5. Decode consecutive hex byte sequences (\'xx\'yy) using TextDecoder
+            text = text.replace(/(?:\\'[0-9a-fA-F]{2})+/g, (match) => {
+                const hexes = match.split("\\'").filter(Boolean);
+                const bytes = new Uint8Array(hexes.map(h => parseInt(h, 16)));
+                try {
+                    return new TextDecoder(encoding).decode(bytes);
+                } catch (e) {
+                    try {
+                        return new TextDecoder('utf-8').decode(bytes);
+                    } catch (err) {
+                        return match;
+                    }
+                }
+            });
+
+            // 6. Convert RTF formatting linebreaks & tabs
+            text = text.replace(/\\par\b/g, '\n')
+                       .replace(/\\line\b/g, '\n')
+                       .replace(/\\tab\b/g, '\t');
+
+            // 7. Strip remaining RTF control tags and curly braces
+            text = text.replace(/\\[a-zA-Z0-9-]+\s?/g, '')
+                       .replace(/[\{\}]/g, '');
+
             return text.trim();
         }
 
