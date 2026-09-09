@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>文件儲存與預覽器 (PDF & RTF)</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col">
+
+    <!-- Top Navigation Header -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-20 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center font-bold text-xl shadow-md shadow-blue-200">
+                    <i class="fa-solid fa-folder-open"></i>
+                </div>
+                <div>
+                    <h1 class="text-lg font-bold text-slate-900 leading-tight">文件儲存庫</h1>
+                    <p class="text-xs text-slate-500">支援 PDF & RTF 格式檔案</p>
+                </div>
+            </div>
+            <!-- Total Storage Info -->
+            <div class="flex items-center gap-4 text-xs font-medium text-slate-600">
+                <div class="bg-slate-100 px-3 py-1.5 rounded-lg border border-slate-200 flex items-center gap-2">
+                    <i class="fa-solid fa-hard-drive text-blue-500"></i>
+                    <span>已儲存: <strong id="total-count" class="text-slate-800">0</strong> 個檔案</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col gap-8">
+
+        <!-- File Upload Dropzone Section -->
+        <section class="bg-white rounded-2xl border-2 border-dashed border-slate-300 p-6 sm:p-8 text-center hover:border-blue-500 transition-all cursor-pointer relative group shadow-sm hover:shadow-md" id="drop-zone">
+            <input type="file" id="file-input" accept=".pdf,.rtf,application/pdf,application/rtf,text/rtf" multiple class="hidden">
+            <div class="flex flex-col items-center justify-center gap-3">
+                <div class="w-16 h-16 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center text-2xl group-hover:scale-110 transition-transform">
+                    <i class="fa-solid fa-cloud-arrow-up"></i>
+                </div>
+                <div>
+                    <p class="text-base font-semibold text-slate-700">點擊上傳 或 將檔案拖拽至此處</p>
+                    <p class="text-xs text-slate-400 mt-1">僅支援 <span class="font-medium text-red-500">.PDF</span> 與 <span class="font-medium text-blue-500">.RTF</span> 格式文件</p>
+                </div>
+                <button type="button" class="mt-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium text-sm rounded-xl transition-all shadow-sm shadow-blue-200 flex items-center gap-2">
+                    <i class="fa-solid fa-plus"></i> 選擇檔案
+                </button>
+            </div>
+        </section>
+
+        <!-- Controls Bar: Filter, Search, View Controls -->
+        <section class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4">
+            <!-- Filter Tabs -->
+            <div class="flex bg-slate-200/80 p-1 rounded-xl text-xs font-semibold text-slate-600 self-start sm:self-auto">
+                <button id="filter-all" onclick="setFilter('all')" class="filter-btn active px-4 py-2 rounded-lg bg-white text-slate-800 shadow-sm transition-all">
+                    全部 <span id="badge-all" class="ml-1 text-slate-400 font-normal">0</span>
+                </button>
+                <button id="filter-pdf" onclick="setFilter('pdf')" class="filter-btn px-4 py-2 rounded-lg hover:text-slate-900 transition-all">
+                    PDF <span id="badge-pdf" class="ml-1 text-slate-400 font-normal">0</span>
+                </button>
+                <button id="filter-rtf" onclick="setFilter('rtf')" class="filter-btn px-4 py-2 rounded-lg hover:text-slate-900 transition-all">
+                    RTF <span id="badge-rtf" class="ml-1 text-slate-400 font-normal">0</span>
+                </button>
+            </div>
+
+            <!-- Search Bar -->
+            <div class="relative flex-1 max-w-xs">
+                <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+                <input type="text" id="search-input" oninput="renderFileList()" placeholder="搜尋檔案名稱..." class="w-full pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all">
+            </div>
+        </section>
+
+        <!-- Documents List / Grid -->
+        <section class="flex-1">
+            <div id="file-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                <!-- Dynamically generated files will appear here -->
+            </div>
+
+            <!-- Empty State -->
+            <div id="empty-state" class="hidden flex flex-col items-center justify-center py-16 text-center">
+                <div class="w-20 h-20 rounded-full bg-slate-100 flex items-center justify-center text-slate-300 text-3xl mb-4">
+                    <i class="fa-solid fa-folder-open"></i>
+                </div>
+                <h3 class="text-base font-semibold text-slate-700">暫無任何文件</h3>
+                <p class="text-xs text-slate-400 mt-1 max-w-sm">你上傳的 PDF 及 RTF 文件會顯示喺呢度，隨時可以預覽同下載。</p>
+            </div>
+        </section>
+    </main>
+
+    <!-- File Preview Modal -->
+    <div id="preview-modal" class="fixed inset-0 z-50 hidden bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl h-[85vh] flex flex-col overflow-hidden border border-slate-100">
+            <!-- Modal Header -->
+            <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
+                <div class="flex items-center gap-3 overflow-hidden">
+                    <span id="preview-icon" class="text-xl"></span>
+                    <h3 id="preview-title" class="font-semibold text-slate-800 text-base truncate">檔案預覽</h3>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button id="modal-download-btn" class="px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-200 rounded-lg transition-all flex items-center gap-1.5">
+                        <i class="fa-solid fa-download"></i> 下載
+                    </button>
+                    <button onclick="closePreviewModal()" class="w-8 h-8 flex items-center justify-center text-slate-400 hover:text-slate-600 hover:bg-slate-200 rounded-lg transition-all">
+                        <i class="fa-solid fa-xmark text-lg"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Modal Preview Body -->
+            <div class="flex-1 bg-slate-100 overflow-hidden relative">
+                <!-- PDF Viewer (Iframe) -->
+                <iframe id="pdf-frame" class="w-full h-full border-0 hidden"></iframe>
+
+                <!-- RTF Viewer Container -->
+                <div id="rtf-viewer" class="w-full h-full p-6 sm:p-8 overflow-y-auto custom-scrollbar bg-white font-mono text-sm leading-relaxed text-slate-800 hidden whitespace-pre-wrap">
+                </div>
+
+                <!-- Unsupported / Error Viewer -->
+                <div id="fallback-viewer" class="w-full h-full flex flex-col items-center justify-center p-6 text-center hidden">
+                    <i class="fa-solid fa-file-circle-exclamation text-4xl text-amber-500 mb-3"></i>
+                    <p class="text-sm font-semibold text-slate-700">無法直接在線上預覽此格式</p>
+                    <p class="text-xs text-slate-400 mt-1">請點擊上方按鈕將檔案下載至電腦查看。</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed bottom-5 right-5 z-50 translate-y-20 opacity-0 transition-all duration-300 pointer-events-none bg-slate-900 text-white px-4 py-3 rounded-xl shadow-lg flex items-center gap-3 text-sm font-medium">
+        <i id="toast-icon" class="fa-solid fa-circle-check text-emerald-400"></i>
+        <span id="toast-message">操作成功</span>
+    </div>
+
+    <script>
+        // --- IndexedDB Local Storage Logic ---
+        const DB_NAME = 'SimpleDocVaultDB';
+        const DB_VERSION = 1;
+        const STORE_NAME = 'documents';
+        let db = null;
+        let currentFilter = 'all';
+        let storedFiles = [];
+
+        // Initialize Database
+        function initDB() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open(DB_NAME, DB_VERSION);
+
+                request.onupgradeneeded = (e) => {
+                    const dbInstance = e.target.result;
+                    if (!dbInstance.objectStoreNames.contains(STORE_NAME)) {
+                        dbInstance.createObjectStore(STORE_NAME, { keyPath: 'id' });
+                    }
+                };
+
+                request.onsuccess = (e) => {
+                    db = e.target.result;
+                    resolve(db);
+                };
+
+                request.onerror = (e) => {
+                    console.error('IndexedDB Error:', e.target.error);
+                    reject(e.target.error);
+                };
+            });
+        }
+
+        // Save File to IndexedDB
+        function saveFileToDB(fileObj) {
+            return new Promise((resolve, reject) => {
+                const tx = db.transaction(STORE_NAME, 'readwrite');
+                const store = tx.objectStore(STORE_NAME);
+                const req = store.put(fileObj);
+
+                req.onsuccess = () => resolve();
+                req.onerror = (e) => reject(e.target.error);
+            });
+        }
+
+        // GetAll Files from IndexedDB
+        function getAllFilesFromDB() {
+            return new Promise((resolve, reject) => {
+                const tx = db.transaction(STORE_NAME, 'readonly');
+                const store = tx.objectStore(STORE_NAME);
+                const req = store.getAll();
+
+                req.onsuccess = () => resolve(req.result || []);
+                req.onerror = (e) => reject(e.target.error);
+            });
+        }
+
+        // Delete File from IndexedDB
+        function deleteFileFromDB(id) {
+            return new Promise((resolve, reject) => {
+                const tx = db.transaction(STORE_NAME, 'readwrite');
+                const store = tx.objectStore(STORE_NAME);
+                const req = store.delete(id);
+
+                req.onsuccess = () => resolve();
+                req.onerror = (e) => reject(e.target.error);
+            });
+        }
+
+        // Format file size
+        function formatBytes(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        // Format Date
+        function formatDate(timestamp) {
+            const d = new Date(timestamp);
+            return `${d.getFullYear()}/${(d.getMonth()+1).toString().padStart(2,'0')}/${d.getDate().toString().padStart(2,'0')} ${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}`;
+        }
+
+        // Handle Upload Process
+        async function processFiles(files) {
+            let addedCount = 0;
+            let errorCount = 0;
+
+            for (const file of files) {
+                const ext = file.name.split('.').pop().toLowerCase();
+                if (ext !== 'pdf' && ext !== 'rtf') {
+                    errorCount++;
+                    continue;
+                }
+
+                const fileRecord = {
+                    id: 'doc_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9),
+                    name: file.name,
+                    size: file.size,
+                    type: ext,
+                    updatedAt: Date.now(),
+                    blob: file
+                };
+
+                try {
+                    await saveFileToDB(fileRecord);
+                    addedCount++;
+                } catch (err) {
+                    console.error('Failed to save file:', err);
+                    errorCount++;
+                }
+            }
+
+            if (addedCount > 0) {
+                showToast(`成功新增 ${addedCount} 個檔案`, 'success');
+                await loadAndRenderFiles();
+            } else if (errorCount > 0) {
+                showToast('請上傳 .pdf 或 .rtf 格式檔案', 'error');
+            }
+        }
+
+        // Simple RTF Parser helper (Strips basic formatting tags for plain view)
+        function parseRTFToText(rtfString) {
+            if (!rtfString) return '';
+            
+            // Remove RTF headers, font definitions, color tables
+            let text = rtfString.replace(/\{\*\\?\w+(;|\s.*?\})?/g, '');
+            text = text.replace(/\\colortbl[\s\S]*?;/g, '');
+            text = text.replace(/\\fonttbl[\s\S]*?\}/g, '');
+            
+            // Convert paragraphs/lines
+            text = text.replace(/\\par\b/g, '\n');
+            text = text.replace(/\\line\b/g, '\n');
+            text = text.replace(/\\tab\b/g, '    ');
+
+            // Strip other backslash formatting commands (\b, \i, \fs24, etc)
+            text = text.replace(/\\[a-z0-9]+\b\s?/gi, '');
+
+            // Decode special escaped hex chars (\'xx)
+            text = text.replace(/\\'[0-9a-fA-F]{2}/g, (match) => {
+                const code = parseInt(match.substring(2), 16);
+                return String.fromCharCode(code);
+            });
+
+            // Strip outer brackets and remaining backslashes
+            text = text.replace(/[\{\}]/g, '');
+            
+            return text.trim();
+        }
+
+        // Render File Cards List
+        async function loadAndRenderFiles() {
+            storedFiles = await getAllFilesFromDB();
+            renderFileList();
+        }
+
+        function renderFileList() {
+            const grid = document.getElementById('file-grid');
+            const emptyState = document.getElementById('empty-state');
+            const searchKeyword = document.getElementById('search-input').value.toLowerCase().trim();
+
+            // Filter logic
+            let filtered = storedFiles.filter(f => {
+                const matchesFilter = currentFilter === 'all' || f.type === currentFilter;
+                const matchesSearch = f.name.toLowerCase().includes(searchKeyword);
+                return matchesFilter && matchesSearch;
+            });
+
+            // Update Counts Badges
+            document.getElementById('total-count').innerText = storedFiles.length;
+            document.getElementById('badge-all').innerText = storedFiles.length;
+            document.getElementById('badge-pdf').innerText = storedFiles.filter(f => f.type === 'pdf').length;
+            document.getElementById('badge-rtf').innerText = storedFiles.filter(f => f.type === 'rtf').length;
+
+            if (filtered.length === 0) {
+                grid.innerHTML = '';
+                emptyState.classList.remove('hidden');
+                return;
+            }
+
+            emptyState.classList.add('hidden');
+
+            // Sort by latest uploaded first
+            filtered.sort((a, b) => b.updatedAt - a.updatedAt);
+
+            grid.innerHTML = filtered.map(file => {
+                const isPdf = file.type === 'pdf';
+                const iconClass = isPdf ? 'fa-file-pdf text-red-500' : 'fa-file-lines text-blue-500';
+                const typeBadge = isPdf 
+                    ? '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-red-50 text-red-600 border border-red-100">PDF</span>'
+                    : '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-50 text-blue-600 border border-blue-100">RTF</span>';
+
+                return `
+                    <div class="bg-white rounded-xl border border-slate-200 hover:border-slate-300 p-4 flex flex-col justify-between shadow-sm hover:shadow-md transition-all group">
+                        <div>
+                            <div class="flex items-start justify-between gap-2 mb-3">
+                                <div class="w-10 h-10 rounded-lg ${isPdf ? 'bg-red-50' : 'bg-blue-50'} flex items-center justify-center text-xl shrink-0">
+                                    <i class="fa-solid ${iconClass}"></i>
+                                </div>
+                                <div class="flex items-center gap-1">
+                                    ${typeBadge}
+                                </div>
+                            </div>
+                            <h4 class="font-semibold text-slate-800 text-sm truncate mb-1" title="${escapeHtml(file.name)}">
+                                ${escapeHtml(file.name)}
+                            </h4>
+                            <div class="flex items-center gap-2 text-xs text-slate-400">
+                                <span>${formatBytes(file.size)}</span>
+                                <span>•</span>
+                                <span>${formatDate(file.updatedAt)}</span>
+                            </div>
+                        </div>
+
+                        <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
+                            <button onclick="previewFile('${file.id}')" class="flex-1 py-1.5 px-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold transition-all flex items-center justify-center gap-1.5">
+                                <i class="fa-solid fa-eye"></i> 預覽
+                            </button>
+                            <button onclick="downloadFile('${file.id}')" class="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all" title="下載檔案">
+                                <i class="fa-solid fa-download"></i>
+                            </button>
+                            <button onclick="deleteFile('${file.id}')" class="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all" title="刪除檔案">
+                                <i class="fa-solid fa-trash-can"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Preview Modal Functions
+        async function previewFile(id) {
+            const file = storedFiles.find(f => f.id === id);
+            if (!file) return;
+
+            const modal = document.getElementById('preview-modal');
+            const modalTitle = document.getElementById('preview-title');
+            const modalIcon = document.getElementById('preview-icon');
+            const downloadBtn = document.getElementById('modal-download-btn');
+
+            const pdfFrame = document.getElementById('pdf-frame');
+            const rtfViewer = document.getElementById('rtf-viewer');
+            const fallbackViewer = document.getElementById('fallback-viewer');
+
+            modalTitle.innerText = file.name;
+            downloadBtn.onclick = () => downloadFile(file.id);
+
+            // Reset Viewers
+            pdfFrame.classList.add('hidden');
+            rtfViewer.classList.add('hidden');
+            fallbackViewer.classList.add('hidden');
+
+            if (file.type === 'pdf') {
+                modalIcon.innerHTML = '<i class="fa-solid fa-file-pdf text-red-500"></i>';
+                const fileUrl = URL.createObjectURL(file.blob);
+                pdfFrame.src = fileUrl;
+                pdfFrame.classList.remove('hidden');
+            } else if (file.type === 'rtf') {
+                modalIcon.innerHTML = '<i class="fa-solid fa-file-lines text-blue-500"></i>';
+                try {
+                    const rtfText = await file.blob.text();
+                    const parsedText = parseRTFToText(rtfText);
+                    rtfViewer.innerText = parsedText || '此 RTF 文件為空或未能解析文字內容。';
+                    rtfViewer.classList.remove('hidden');
+                } catch (e) {
+                    fallbackViewer.classList.remove('hidden');
+                }
+            } else {
+                fallbackViewer.classList.remove('hidden');
+            }
+
+            modal.classList.remove('hidden');
+        }
+
+        function closePreviewModal() {
+            const modal = document.getElementById('preview-modal');
+            const pdfFrame = document.getElementById('pdf-frame');
+            pdfFrame.src = ''; // Clear iframe src to stop PDF load/memory leak
+            modal.classList.add('hidden');
+        }
+
+        // Download File
+        function downloadFile(id) {
+            const file = storedFiles.find(f => f.id === id);
+            if (!file) return;
+
+            const url = URL.createObjectURL(file.blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = file.name;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            showToast('已開始下載檔案', 'info');
+        }
+
+        // Delete File
+        async function deleteFile(id) {
+            try {
+                await deleteFileFromDB(id);
+                showToast('檔案已成功刪除', 'success');
+                await loadAndRenderFiles();
+            } catch (err) {
+                showToast('刪除檔案失敗', 'error');
+            }
+        }
+
+        // Filter Switcher
+        function setFilter(filter) {
+            currentFilter = filter;
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.remove('bg-white', 'text-slate-800', 'shadow-sm');
+                btn.classList.add('hover:text-slate-900');
+            });
+
+            const activeBtn = document.getElementById(`filter-${filter}`);
+            if (activeBtn) {
+                activeBtn.classList.add('bg-white', 'text-slate-800', 'shadow-sm');
+                activeBtn.classList.remove('hover:text-slate-900');
+            }
+
+            renderFileList();
+        }
+
+        // Toast Notification Helper
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            const toastMsg = document.getElementById('toast-message');
+            const toastIcon = document.getElementById('toast-icon');
+
+            toastMsg.innerText = message;
+            
+            if (type === 'error') {
+                toastIcon.className = 'fa-solid fa-circle-xmark text-rose-400';
+            } else if (type === 'info') {
+                toastIcon.className = 'fa-solid fa-circle-info text-blue-400';
+            } else {
+                toastIcon.className = 'fa-solid fa-circle-check text-emerald-400';
+            }
+
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            
+            setTimeout(() => {
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 3000);
+        }
+
+        // Utility: Escape HTML
+        function escapeHtml(str) {
+            return str.replace(/[&<>'"]/g, 
+                tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)
+            );
+        }
+
+        // Event Listeners Setup
+        window.addEventListener('DOMContentLoaded', async () => {
+            await initDB();
+            await loadAndRenderFiles();
+
+            const dropZone = document.getElementById('drop-zone');
+            const fileInput = document.getElementById('file-input');
+
+            // Click Dropzone to Trigger Input
+            dropZone.addEventListener('click', () => fileInput.click());
+
+            fileInput.addEventListener('change', (e) => {
+                if (e.target.files.length > 0) {
+                    processFiles(e.target.files);
+                    fileInput.value = ''; // Reset input
+                }
+            });
+
+            // Drag and Drop Events
+            ['dragenter', 'dragover'].forEach(eventName => {
+                dropZone.addEventListener(eventName, (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    dropZone.classList.add('border-blue-500', 'bg-blue-50/50');
+                }, false);
+            });
+
+            ['dragleave', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    dropZone.classList.remove('border-blue-500', 'bg-blue-50/50');
+                }, false);
+            });
+
+            dropZone.addEventListener('drop', (e) => {
+                const dt = e.dataTransfer;
+                const files = dt.files;
+                if (files.length > 0) {
+                    processFiles(files);
+                }
+            });
+        });
+    </script>
+</body>
+</html>
