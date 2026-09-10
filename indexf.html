@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>雲端檔案寄託、預覽與跨裝置分享站</title>
+    <title>雲端檔案寄託與跨裝置分享站</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Font Awesome Icons -->
@@ -36,7 +36,6 @@
         pre, code {
             font-family: 'JetBrains Mono', monospace;
         }
-        /* Custom scrollbar styling */
         ::-webkit-scrollbar {
             width: 8px;
             height: 8px;
@@ -55,7 +54,6 @@
 </head>
 <body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col antialiased selection:bg-emerald-500 selection:text-white">
 
-    <!-- Top Header Bar -->
     <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur-md sticky top-0 z-30">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
             <div class="flex items-center gap-3">
@@ -64,15 +62,14 @@
                 </div>
                 <div>
                     <h1 class="font-bold text-lg text-slate-100 tracking-tight leading-tight">雲端檔案寄託與跨裝置分享站</h1>
-                    <p class="text-xs text-slate-400 hidden sm:block">即時預覽 • 專屬二維碼 • 跨裝置高速傳輸</p>
+                    <p class="text-xs text-slate-400 hidden sm:block">PDF/文件即時預覽 • 高清二維碼下載 • 跨裝置傳輸</p>
                 </div>
             </div>
 
-            <!-- Header actions -->
             <div class="flex items-center gap-3">
                 <span id="syncStatusBadge" class="hidden sm:inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
                     <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                    雲端同步已就緒
+                    本機與雲端已就緒
                 </span>
                 <button id="btnNewUpload" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-sm font-medium transition shadow-md flex items-center gap-2">
                     <i class="fa-solid fa-plus"></i>
@@ -82,7 +79,6 @@
         </div>
     </header>
 
-    <!-- Main Container -->
     <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col gap-8">
         
         <!-- Banner Notice for Shared Links -->
@@ -91,7 +87,7 @@
                 <i class="fa-solid fa-circle-info text-xl text-emerald-400"></i>
                 <div>
                     <span class="font-semibold">您正在檢視跨裝置分享的檔案！</span>
-                    <span class="block sm:inline text-xs sm:text-sm text-emerald-400/80">點擊下方按鈕可直接開啟預覽或下載至本機。</span>
+                    <span class="block sm:inline text-xs sm:text-sm text-emerald-400/80">點擊下方按鈕可直接開啟文件預覽或下載至本機。</span>
                 </div>
             </div>
             <button id="btnDismissBanner" class="text-emerald-400 hover:text-emerald-200 text-sm px-2 py-1">
@@ -110,12 +106,12 @@
                     </div>
                     <h3 class="text-lg sm:text-xl font-bold text-slate-200 mb-2">拖曳檔案至此處，或點擊選取檔案寄託</h3>
                     <p class="text-xs sm:text-sm text-slate-400 max-w-md mb-6">
-                        支援 圖片、PDF、Word、Excel、影音、TXT、程式碼、CSV 等格式。上傳後自動產生專屬二維碼與跨裝置分享連結。
+                        支援 PDF、Word、Excel、PowerPoint、CSV、TXT、JSON、程式碼與各類壓縮檔。自動產生專屬二維碼與下載連結。
                     </p>
                     <div class="flex flex-wrap items-center justify-center gap-3 text-xs text-slate-400">
-                        <span class="px-3 py-1.5 rounded-lg bg-slate-900/60 border border-slate-700/60"><i class="fa-solid fa-shield-halved text-emerald-400 mr-1.5"></i>本機加密儲存</span>
-                        <span class="px-3 py-1.5 rounded-lg bg-slate-900/60 border border-slate-700/60"><i class="fa-solid fa-qrcode text-emerald-400 mr-1.5"></i>即時 QR Code</span>
-                        <span class="px-3 py-1.5 rounded-lg bg-slate-900/60 border border-slate-700/60"><i class="fa-solid fa-eye text-emerald-400 mr-1.5"></i>全類型即時預覽</span>
+                        <span class="px-3 py-1.5 rounded-lg bg-slate-900/60 border border-slate-700/60"><i class="fa-solid fa-shield-halved text-emerald-400 mr-1.5"></i>本機安全儲存</span>
+                        <span class="px-3 py-1.5 rounded-lg bg-slate-900/60 border border-slate-700/60"><i class="fa-solid fa-qrcode text-emerald-400 mr-1.5"></i>高清二維碼下載</span>
+                        <span class="px-3 py-1.5 rounded-lg bg-slate-900/60 border border-slate-700/60"><i class="fa-solid fa-file-pdf text-emerald-400 mr-1.5"></i>PDF與文件線上預覽</span>
                     </div>
                 </div>
 
@@ -125,12 +121,11 @@
                         <i class="fa-solid fa-spinner"></i>
                     </div>
                     <h3 class="text-lg font-bold text-slate-200 mb-1" id="uploadStatusTitle">正在讀取並處理檔案...</h3>
-                    <p class="text-xs text-slate-400" id="uploadStatusSub">請稍候，系統正在為您建立託管記錄與專屬 QR Code</p>
+                    <p class="text-xs text-slate-400" id="uploadStatusSub">請稍候，系統正在為您建立託管記錄與專屬二維碼</p>
                 </div>
             </div>
         </section>
 
-        <!-- Search and Filter Bar -->
         <section class="flex flex-col sm:flex-row items-center justify-between gap-4">
             <div class="relative w-full sm:w-80">
                 <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
@@ -138,15 +133,13 @@
             </div>
             <div class="flex items-center gap-2 w-full sm:w-auto overflow-x-auto pb-1 sm:pb-0 text-xs">
                 <button data-filter="all" class="filter-btn active px-3.5 py-2 rounded-xl bg-emerald-600 text-white font-medium transition shadow-sm whitespace-nowrap">全部 (<span id="countAll">0</span>)</button>
-                <button data-filter="image" class="filter-btn px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium transition whitespace-nowrap">圖片 (<span id="countImg">0</span>)</button>
-                <button data-filter="document" class="filter-btn px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium transition whitespace-nowrap">文件/PDF (<span id="countDocs">0</span>)</button>
-                <button data-filter="media" class="filter-btn px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium transition whitespace-nowrap">影音 (<span id="countMedia">0</span>)</button>
+                <button data-filter="document" class="filter-btn px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium transition whitespace-nowrap">PDF/文件 (<span id="countDocs">0</span>)</button>
                 <button data-filter="code" class="filter-btn px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium transition whitespace-nowrap">文字/程式碼 (<span id="countCode">0</span>)</button>
+                <button data-filter="sheet" class="filter-btn px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium transition whitespace-nowrap">CSV/試算表 (<span id="countSheet">0</span>)</button>
                 <button data-filter="other" class="filter-btn px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium transition whitespace-nowrap">其他 (<span id="countOther">0</span>)</button>
             </div>
         </section>
 
-        <!-- Files List Grid -->
         <section>
             <div id="emptyState" class="text-center py-16 bg-slate-800/20 rounded-3xl border border-slate-800">
                 <div class="w-16 h-16 rounded-full bg-slate-800 text-slate-500 flex items-center justify-center mx-auto mb-4 text-2xl">
@@ -156,17 +149,16 @@
                 <p class="text-xs text-slate-500 max-w-xs mx-auto mb-4">請點擊上方上傳區域或拖曳檔案進行託管。</p>
             </div>
             <div id="filesGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 hidden">
-                <!-- Dynamically populated file cards -->
+                <!-- File cards rendered dynamically -->
             </div>
         </section>
     </main>
 
     <!-- Footer -->
     <footer class="border-t border-slate-800 py-6 text-center text-xs text-slate-500">
-        <p>雲端檔案寄託與跨裝置分享站 • 支援多類型線上文件預覽與高速 QR Code 下載</p>
+        <p>雲端檔案寄託與跨裝置分享站 • 高清二維碼下載與 PDF / 報表 / 文字檔即時預覽</p>
     </footer>
 
-    <!-- File Preview Modal -->
     <div id="previewModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
         <div class="bg-slate-900 border border-slate-800 rounded-3xl max-w-4xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
             <!-- Modal Header -->
@@ -193,7 +185,7 @@
 
             <!-- Modal Body -->
             <div id="previewModalBody" class="p-6 overflow-y-auto flex-1 min-h-[300px] flex items-center justify-center bg-slate-950/40">
-                <!-- Dynamic preview contents (Image, Video, Audio, PDF, Code, Text, CSV, or Details) -->
+                <!-- Content generated via JavaScript -->
             </div>
 
             <!-- Modal Footer -->
@@ -215,7 +207,6 @@
         </div>
     </div>
 
-    <!-- QR Code Share Modal -->
     <div id="qrModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
         <div class="bg-slate-900 border border-slate-800 rounded-3xl max-w-md w-full p-6 text-center shadow-2xl relative">
             <button id="btnCloseQrModal" class="absolute top-4 right-4 w-8 h-8 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-slate-200 flex items-center justify-center transition">
@@ -250,31 +241,14 @@
     <!-- Toast Notification Container -->
     <div id="toastContainer" class="fixed bottom-6 right-6 z-50 flex flex-col gap-2 pointer-events-none"></div>
 
-    <!-- JavaScript Application Logic -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
-        // Firebase Configuration setup
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'cloud-share-app';
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
-            apiKey: "demo",
-            authDomain: "demo.firebaseapp.com",
-            projectId: "demo",
-            storageBucket: "demo.appspot.com",
-            messagingSenderId: "123456",
-            appId: "1:123456:web:1234"
-        };
-
-        let app, db, auth;
-        let currentUser = null;
+    <script>
+        // Main Application State
         let filesData = [];
         let currentFilter = 'all';
         let searchQuery = '';
         let currentModalFile = null;
 
-        // IndexedDB helper for robust storage beyond LocalStorage limit
+        // IndexedDB database setup
         const IDB_NAME = 'CloudShareStorageDB';
         const IDB_STORE = 'files_store';
 
@@ -282,9 +256,9 @@
             return new Promise((resolve, reject) => {
                 const request = indexedDB.open(IDB_NAME, 1);
                 request.onupgradeneeded = (e) => {
-                    const database = e.target.result;
-                    if (!database.objectStoreNames.contains(IDB_STORE)) {
-                        database.createObjectStore(IDB_STORE, { keyPath: 'id' });
+                    const db = e.target.result;
+                    if (!db.objectStoreNames.contains(IDB_STORE)) {
+                        db.createObjectStore(IDB_STORE, { keyPath: 'id' });
                     }
                 };
                 request.onsuccess = (e) => resolve(e.target.result);
@@ -294,9 +268,9 @@
 
         async function saveFileToIDB(fileRecord) {
             try {
-                const database = await openIDB();
+                const db = await openIDB();
                 return new Promise((resolve, reject) => {
-                    const tx = database.transaction(IDB_STORE, 'readwrite');
+                    const tx = db.transaction(IDB_STORE, 'readwrite');
                     const store = tx.objectStore(IDB_STORE);
                     const req = store.put(fileRecord);
                     req.onsuccess = () => resolve(true);
@@ -309,9 +283,9 @@
 
         async function getAllFilesFromIDB() {
             try {
-                const database = await openIDB();
+                const db = await openIDB();
                 return new Promise((resolve) => {
-                    const tx = database.transaction(IDB_STORE, 'readonly');
+                    const tx = db.transaction(IDB_STORE, 'readonly');
                     const request = tx.objectStore(IDB_STORE).getAll();
                     request.onsuccess = () => resolve(request.result || []);
                     request.onerror = () => resolve([]);
@@ -323,9 +297,9 @@
 
         async function getFileFromIDB(id) {
             try {
-                const database = await openIDB();
+                const db = await openIDB();
                 return new Promise((resolve) => {
-                    const tx = database.transaction(IDB_STORE, 'readonly');
+                    const tx = db.transaction(IDB_STORE, 'readonly');
                     const request = tx.objectStore(IDB_STORE).get(id);
                     request.onsuccess = () => resolve(request.result || null);
                     request.onerror = () => resolve(null);
@@ -337,66 +311,13 @@
 
         async function deleteFileFromIDB(id) {
             try {
-                const database = await openIDB();
-                const tx = database.transaction(IDB_STORE, 'readwrite');
+                const db = await openIDB();
+                const tx = db.transaction(IDB_STORE, 'readwrite');
                 tx.objectStore(IDB_STORE).delete(id);
             } catch (e) {}
         }
 
-        async function initFirebase() {
-            try {
-                app = initializeApp(firebaseConfig);
-                db = getFirestore(app);
-                auth = getAuth(app);
-
-                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    await signInWithCustomToken(auth, __initial_auth_token);
-                } else {
-                    await signInAnonymously(auth);
-                }
-
-                currentUser = auth.currentUser;
-
-                // Sync files from Firestore for cross-device visibility
-                const publicFilesRef = collection(db, 'artifacts', appId, 'public', 'data', 'files');
-                onSnapshot(publicFilesRef, async (snapshot) => {
-                    const cloudFiles = [];
-                    snapshot.forEach((docSnap) => {
-                        const data = docSnap.data();
-                        if (!data.deleted) cloudFiles.push(data);
-                    });
-                    
-                    // Merge local IDB and Cloud files
-                    const localFiles = await getAllFilesFromIDB();
-                    const mergedMap = new Map();
-
-                    localFiles.forEach(f => mergedMap.set(f.id, f));
-                    cloudFiles.forEach(f => {
-                        // Prefer local object if dataUrl exists, else take cloud
-                        if (!mergedMap.has(f.id) || !mergedMap.get(f.id).dataUrl) {
-                            mergedMap.set(f.id, f);
-                        }
-                    });
-
-                    filesData = Array.from(mergedMap.values()).sort((a,b) => (b.uploadedAt || 0) - (a.uploadedAt || 0));
-                    renderFiles();
-                    checkUrlParamForFile();
-                }, (error) => {
-                    console.warn("Firestore listener fallback:", error);
-                    loadLocalFilesOnly();
-                });
-            } catch (e) {
-                console.warn("Firebase Init fallback to offline mode:", e);
-                loadLocalFilesOnly();
-            }
-        }
-
-        async function loadLocalFilesOnly() {
-            filesData = await getAllFilesFromIDB();
-            renderFiles();
-            checkUrlParamForFile();
-        }
-
+        // Toast Messages
         function showToast(message, type = 'info') {
             const container = document.getElementById('toastContainer');
             const toast = document.createElement('div');
@@ -409,7 +330,7 @@
                          type === 'error' ? 'fa-exclamation-circle' : 'fa-info-circle';
 
             toast.className = `pointer-events-auto flex items-center gap-2.5 px-4 py-3 rounded-2xl shadow-xl text-xs sm:text-sm font-medium ${bgClass} animate-in slide-in-from-bottom-5 duration-200`;
-            toast.innerHTML = `<i class="fa-solid ${icon} text-base"></i><span>${message}</span>`;
+            toast.innerHTML = `<i class="fa-solid ${icon} text-base"></i><span>${escapeHtml(message)}</span>`;
             
             container.appendChild(toast);
             setTimeout(() => {
@@ -422,14 +343,12 @@
             const ext = (fileName || '').split('.').pop().toLowerCase();
             const mime = (fileType || '').toLowerCase();
 
-            const imgExts = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp', 'ico', 'avif'];
-            const mediaExts = ['mp3', 'wav', 'ogg', 'm4a', 'flac', 'aac', 'mp4', 'webm', 'ogv', 'mov'];
-            const docExts = ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'odt', 'rtf'];
-            const codeExts = ['txt', 'md', 'json', 'js', 'html', 'css', 'py', 'csv', 'xml', 'log', 'sql', 'sh', 'c', 'cpp', 'java', 'ts', 'jsx', 'tsx', 'php', 'yaml', 'yml'];
+            const docExts = ['pdf', 'doc', 'docx', 'ppt', 'pptx', 'odt', 'rtf'];
+            const sheetExts = ['csv', 'xls', 'xlsx', 'ods'];
+            const codeExts = ['txt', 'md', 'json', 'js', 'html', 'css', 'py', 'xml', 'log', 'sql', 'sh', 'c', 'cpp', 'java', 'ts', 'jsx', 'tsx', 'php', 'yaml', 'yml'];
 
-            if (imgExts.includes(ext) || mime.startsWith('image/')) return 'image';
-            if (mediaExts.includes(ext) || mime.startsWith('audio/') || mime.startsWith('video/')) return 'media';
-            if (docExts.includes(ext) || mime.includes('pdf') || mime.includes('document') || mime.includes('sheet') || mime.includes('presentation')) return 'document';
+            if (ext === 'csv' || sheetExts.includes(ext) || mime.includes('csv') || mime.includes('excel') || mime.includes('sheet')) return 'sheet';
+            if (docExts.includes(ext) || mime.includes('pdf') || mime.includes('document') || mime.includes('presentation')) return 'document';
             if (codeExts.includes(ext) || mime.startsWith('text/')) return 'code';
             return 'other';
         }
@@ -438,15 +357,6 @@
             const ext = (fileName || '').split('.').pop().toLowerCase();
             const mime = (fileType || '').toLowerCase();
 
-            if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp'].includes(ext) || mime.startsWith('image/')) {
-                return { icon: 'fa-solid fa-file-image', color: 'text-emerald-400 bg-emerald-500/10' };
-            }
-            if (['mp3', 'wav', 'ogg', 'm4a', 'flac'].includes(ext) || mime.startsWith('audio/')) {
-                return { icon: 'fa-solid fa-file-audio', color: 'text-purple-400 bg-purple-500/10' };
-            }
-            if (['mp4', 'webm', 'mov', 'avi'].includes(ext) || mime.startsWith('video/')) {
-                return { icon: 'fa-solid fa-file-video', color: 'text-pink-400 bg-pink-500/10' };
-            }
             if (ext === 'pdf' || mime.includes('pdf')) {
                 return { icon: 'fa-solid fa-file-pdf', color: 'text-red-400 bg-red-500/10' };
             }
@@ -489,10 +399,9 @@
 
             // Update Counts
             document.getElementById('countAll').innerText = filesData.length;
-            document.getElementById('countImg').innerText = filesData.filter(f => getFileCategory(f.name, f.type||'')==='image').length;
             document.getElementById('countDocs').innerText = filesData.filter(f => getFileCategory(f.name, f.type||'')==='document').length;
-            document.getElementById('countMedia').innerText = filesData.filter(f => getFileCategory(f.name, f.type||'')==='media').length;
             document.getElementById('countCode').innerText = filesData.filter(f => getFileCategory(f.name, f.type||'')==='code').length;
+            document.getElementById('countSheet').innerText = filesData.filter(f => getFileCategory(f.name, f.type||'')==='sheet').length;
             document.getElementById('countOther').innerText = filesData.filter(f => getFileCategory(f.name, f.type||'')==='other').length;
 
             if (filtered.length === 0) {
@@ -551,7 +460,7 @@
                     } else {
                         btnDelete.dataset.confirming = "true";
                         btnDelete.innerHTML = `<i class="fa-solid fa-check text-red-400"></i>`;
-                        showToast(`再次點擊以刪除「${file.name}」`, 'error');
+                        showToast(`再次點擊以確定刪除「${file.name}」`, 'error');
                         setTimeout(() => {
                             btnDelete.dataset.confirming = "false";
                             btnDelete.innerHTML = `<i class="fa-solid fa-trash-can"></i>`;
@@ -582,12 +491,8 @@
             try {
                 for (let i = 0; i < totalFiles; i++) {
                     const file = filesList[i];
-                    if (statusTitle) {
-                        statusTitle.innerText = `正在讀取並處理檔案 (${i + 1}/${totalFiles})...`;
-                    }
-                    if (statusSub) {
-                        statusSub.innerText = file.name;
-                    }
+                    if (statusTitle) statusTitle.innerText = `正在處理檔案 (${i + 1}/${totalFiles})...`;
+                    if (statusSub) statusSub.innerText = file.name;
 
                     try {
                         const dataUrl = await readFileAsDataUrl(file);
@@ -600,29 +505,14 @@
                             dataUrl: dataUrl
                         };
 
-                        // Store to Local IDB
                         await saveFileToIDB(fileRecord);
-
-                        // Update local array & UI immediately
                         filesData = filesData.filter(f => f.id !== fileRecord.id);
                         filesData.unshift(fileRecord);
                         renderFiles();
                         showToast(`「${file.name}」已成功寄託！`, 'success');
-
-                        // Sync to Cloud Firestore in background (for files < 750KB)
-                        if (db && file.size < 750 * 1024) {
-                            (async () => {
-                                try {
-                                    const cloudRef = doc(db, 'artifacts', appId, 'public', 'data', 'files', fileRecord.id);
-                                    await setDoc(cloudRef, fileRecord);
-                                } catch (err) {
-                                    console.warn("Firestore background sync skipped:", err);
-                                }
-                            })();
-                        }
                     } catch (e) {
-                        console.error("Upload error for file:", file.name, e);
-                        showToast(`上傳「${file.name}」失敗：${e.message || '讀取錯誤'}`, 'error');
+                        console.error("Upload error:", file.name, e);
+                        showToast(`上傳「${file.name}」失敗`, 'error');
                     }
                 }
             } finally {
@@ -644,40 +534,30 @@
 
         async function deleteFile(id) {
             await deleteFileFromIDB(id);
-            if (db) {
-                try {
-                    const cloudRef = doc(db, 'artifacts', appId, 'public', 'data', 'files', id);
-                    await setDoc(cloudRef, { deleted: true }, { merge: true });
-                } catch (e) {}
-            }
             filesData = filesData.filter(f => f.id !== id);
             renderFiles();
-            showToast('檔案已刪除', 'info');
+            showToast('檔案已順利刪除', 'info');
         }
 
         function dataUrlToBlob(dataUrl) {
             if (!dataUrl || typeof dataUrl !== 'string') {
-                throw new Error('Data URL 不存在或無效');
+                throw new Error('Data URL 無效');
             }
             const parts = dataUrl.split(',');
             if (parts.length < 2) {
-                throw new Error('Data URL 格式不正確');
+                throw new Error('格式不正確');
             }
 
             let mime = 'application/octet-stream';
             const mimeMatch = parts[0].match(/:(.*?);/);
             if (mimeMatch && mimeMatch[1]) {
                 mime = mimeMatch[1];
-            } else {
-                const simpleMime = parts[0].match(/:(.*)/);
-                if (simpleMime && simpleMime[1]) mime = simpleMime[1];
             }
 
             const isBase64 = parts[0].includes('base64');
             let u8arr;
 
             if (isBase64) {
-                // Remove whitespace/newlines from base64 string
                 const base64Str = parts[1].replace(/\s/g, '');
                 const bstr = atob(base64Str);
                 let n = bstr.length;
@@ -687,68 +567,42 @@
                 }
             } else {
                 const decodedStr = decodeURIComponent(parts[1]);
-                const encoder = new TextEncoder();
-                u8arr = encoder.encode(decodedStr);
+                u8arr = new TextEncoder().encode(decodedStr);
             }
             return new Blob([u8arr], { type: mime });
         }
 
+        function downloadDataUrlAsFile(dataUrl, fileName) {
+            try {
+                const blob = dataUrlToBlob(dataUrl);
+                const blobUrl = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = blobUrl;
+                a.download = fileName || 'download';
+                a.style.display = 'none';
+                document.body.appendChild(a);
+                a.click();
+                setTimeout(() => {
+                    if (document.body.contains(a)) document.body.removeChild(a);
+                    URL.revokeObjectURL(blobUrl);
+                }, 3000);
+            } catch (err) {
+                console.warn("Direct blob download error, falling back to window.open", err);
+                window.open(dataUrl, '_blank');
+            }
+        }
+
         function triggerDownload(file) {
-            if (!file) {
-                showToast('無法取得檔案資訊', 'error');
+            if (!file || !file.dataUrl) {
+                showToast('無法取得檔案內容或下載連結失效', 'error');
                 return;
             }
-
-            if (file.dataUrl) {
-                // Method 1: Blob URL download
-                try {
-                    const blob = dataUrlToBlob(file.dataUrl);
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = file.name || 'downloaded_file';
-                    a.style.display = 'none';
-                    document.body.appendChild(a);
-                    a.click();
-
-                    setTimeout(() => {
-                        if (document.body.contains(a)) document.body.removeChild(a);
-                        URL.revokeObjectURL(url);
-                    }, 3000);
-
-                    showToast(`已成功開始下載「${file.name}」`, 'success');
-                    return;
-                } catch (err) {
-                    console.warn('Blob download failed, trying direct link fallback:', err);
-                }
-
-                // Method 2: Direct Anchor dataUrl link fallback
-                try {
-                    const a = document.createElement('a');
-                    a.href = file.dataUrl;
-                    a.download = file.name || 'downloaded_file';
-                    a.target = '_blank';
-                    document.body.appendChild(a);
-                    a.click();
-                    setTimeout(() => { if (document.body.contains(a)) document.body.removeChild(a); }, 1000);
-                    showToast(`已開始下載「${file.name}」`, 'success');
-                    return;
-                } catch (err2) {
-                    console.warn('Direct download link failed, attempting new window opening:', err2);
-                }
-
-                // Method 3: Open in new window/tab
-                try {
-                    const win = window.open();
-                    if (win) {
-                        win.document.write(`<iframe src="${file.dataUrl}" frameborder="0" style="border:0; top:0px; left:0px; bottom:0px; right:0px; width:100%; height:100%;" allowfullscreen></iframe>`);
-                        showToast(`已於新分頁開啟「${file.name}」，您可以直接儲存`, 'info');
-                        return;
-                    }
-                } catch (err3) {}
+            try {
+                downloadDataUrlAsFile(file.dataUrl, file.name);
+                showToast(`已開始下載「${file.name}」`, 'success');
+            } catch (err) {
+                showToast('觸發下載失敗', 'error');
             }
-
-            showToast('該檔案缺乏數據內容或連結已失效', 'error');
         }
 
         async function openPreviewModal(file) {
@@ -778,8 +632,8 @@
                         <div class="w-16 h-16 rounded-2xl bg-amber-500/10 text-amber-400 flex items-center justify-center mx-auto mb-4 text-3xl">
                             <i class="fa-solid fa-triangle-exclamation"></i>
                         </div>
-                        <h4 class="font-bold text-slate-100 mb-2">無法預覽雲端檔案內容</h4>
-                        <p class="text-xs text-slate-400 mb-6 leading-relaxed">此檔案可能僅保留記錄或超出免費雲端即時載入上限。</p>
+                        <h4 class="font-bold text-slate-100 mb-2">無法預覽檔案內容</h4>
+                        <p class="text-xs text-slate-400 mb-6">檔案資料不完整或已關閉預覽。</p>
                         <button id="btnCardDownload" class="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-sm rounded-xl transition shadow-lg flex items-center justify-center gap-2">
                             <i class="fa-solid fa-download"></i>
                             <span>嘗試觸發下載</span>
@@ -791,82 +645,41 @@
                 return;
             }
 
-            // Category Specific Preview Renderers
-            if (category === 'image') {
-                // Image Preview
-                body.innerHTML = `
-                    <div class="flex flex-col items-center justify-center w-full gap-4">
-                        <div class="relative max-h-[60vh] overflow-auto rounded-2xl border border-slate-800 bg-slate-950/60 p-2 flex items-center justify-center w-full min-h-[220px]">
-                            <img src="${file.dataUrl}" alt="${escapeHtml(file.name)}" class="max-h-[55vh] w-auto max-w-full object-contain rounded-xl shadow-2xl transition-transform duration-200" id="previewImgElement" />
-                        </div>
-                        <div class="flex items-center gap-2 text-xs text-slate-400">
-                            <button id="btnZoomIn" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 rounded-xl transition"><i class="fa-solid fa-magnifying-glass-plus mr-1"></i> 放大</button>
-                            <button id="btnZoomOut" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 rounded-xl transition"><i class="fa-solid fa-magnifying-glass-minus mr-1"></i> 縮小</button>
-                            <button id="btnZoomReset" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 rounded-xl transition"><i class="fa-solid fa-rotate-left mr-1"></i> 重設</button>
-                        </div>
-                    </div>
-                `;
-                let scale = 1;
-                const img = body.querySelector('#previewImgElement');
-                body.querySelector('#btnZoomIn').addEventListener('click', () => { scale = Math.min(scale + 0.25, 3); img.style.transform = `scale(${scale})`; });
-                body.querySelector('#btnZoomOut').addEventListener('click', () => { scale = Math.max(scale - 0.25, 0.5); img.style.transform = `scale(${scale})`; });
-                body.querySelector('#btnZoomReset').addEventListener('click', () => { scale = 1; img.style.transform = `scale(1)`; });
-
-            } else if (category === 'media') {
-                // Audio & Video Preview
-                const isVideo = ['mp4', 'webm', 'ogv', 'mov'].includes(ext) || (file.type || '').startsWith('video/');
-                if (isVideo) {
+            // PDF Preview Engine
+            if (ext === 'pdf' || (file.type || '').includes('pdf')) {
+                try {
+                    const blob = dataUrlToBlob(file.dataUrl);
+                    const blobUrl = URL.createObjectURL(blob);
                     body.innerHTML = `
-                        <div class="w-full max-w-2xl flex flex-col items-center justify-center p-4 bg-slate-900 rounded-2xl border border-slate-800">
-                            <video controls class="w-full max-h-[55vh] rounded-xl shadow-xl bg-black" src="${file.dataUrl}"></video>
-                        </div>
-                    `;
-                } else {
-                    body.innerHTML = `
-                        <div class="w-full max-w-md text-center p-8 bg-slate-900 rounded-3xl border border-slate-800 shadow-xl">
-                            <div class="w-20 h-20 rounded-2xl bg-purple-500/10 text-purple-400 flex items-center justify-center mx-auto mb-6 text-3xl">
-                                <i class="fa-solid fa-music animate-pulse"></i>
+                        <div class="w-full flex flex-col gap-3">
+                            <div class="flex items-center justify-between text-xs text-slate-400 bg-slate-900/80 px-4 py-2.5 rounded-xl border border-slate-800">
+                                <span><i class="fa-solid fa-file-pdf text-red-400 mr-1.5"></i> PDF 文件線上即時預覽</span>
+                                <button id="btnOpenPdfNewTab" class="text-emerald-400 hover:text-emerald-300 font-semibold flex items-center gap-1 transition">
+                                    <i class="fa-solid fa-arrow-up-right-from-square"></i> 在新分頁開啟 PDF
+                                </button>
                             </div>
-                            <h4 class="font-bold text-slate-100 mb-4 truncate">${escapeHtml(file.name)}</h4>
-                            <audio controls class="w-full" src="${file.dataUrl}"></audio>
+                            <div class="w-full h-[60vh] rounded-2xl overflow-hidden border border-slate-800 bg-slate-950 flex flex-col relative">
+                                <iframe src="${blobUrl}" class="w-full h-full border-0"></iframe>
+                            </div>
                         </div>
                     `;
+                    body.querySelector('#btnOpenPdfNewTab').addEventListener('click', () => {
+                        window.open(blobUrl, '_blank');
+                    });
+                } catch(e) {
+                    showToast('PDF 預覽載入失敗', 'error');
                 }
 
-            } else if (ext === 'pdf' || (file.type || '').includes('pdf')) {
-                // PDF Viewer
-                body.innerHTML = `
-                    <div class="w-full flex flex-col gap-3">
-                        <div class="flex items-center justify-between text-xs text-slate-400 bg-slate-900/80 px-4 py-2.5 rounded-xl border border-slate-800">
-                            <span><i class="fa-solid fa-file-pdf text-red-400 mr-1.5"></i> PDF 文件線上即時預覽</span>
-                            <button id="btnOpenPdfNewTab" class="text-emerald-400 hover:text-emerald-300 font-semibold flex items-center gap-1 transition">
-                                <i class="fa-solid fa-arrow-up-right-from-square"></i> 在新分頁開啟 PDF
-                            </button>
-                        </div>
-                        <div class="w-full h-[60vh] rounded-2xl overflow-hidden border border-slate-800 bg-slate-950 flex flex-col relative">
-                            <iframe src="${file.dataUrl}" class="w-full h-full border-0"></iframe>
-                        </div>
-                    </div>
-                `;
-                body.querySelector('#btnOpenPdfNewTab').addEventListener('click', () => {
-                    const win = window.open();
-                    if (win) {
-                        win.document.write(`<iframe src="${file.dataUrl}" frameborder="0" style="border:0; top:0px; left:0px; bottom:0px; right:0px; width:100%; height:100%;" allowfullscreen></iframe>`);
-                    } else {
-                        showToast('請允許開啟快顯視窗以檢視 PDF', 'error');
-                    }
-                });
-
-            } else if (ext === 'csv') {
-                // CSV Table Preview
+            } else if (category === 'sheet' || ext === 'csv') {
+                // CSV Table Preview Engine
                 const textContent = decodeDataUrlToText(file.dataUrl);
                 const tableHtml = renderCsvTable(textContent);
                 body.innerHTML = `
                     <div class="w-full flex flex-col gap-3">
                         <div class="flex items-center justify-between text-xs text-slate-400 bg-slate-900/80 px-4 py-2.5 rounded-xl border border-slate-800">
-                            <span><i class="fa-solid fa-table text-emerald-400 mr-1.5"></i> CSV 數據表預覽</span>
+                            <span><i class="fa-solid fa-table text-emerald-400 mr-1.5"></i> CSV / 試算表內容預覽</span>
                             <button id="btnCopyCsv" class="text-emerald-400 hover:text-emerald-300 font-semibold flex items-center gap-1">
-                                <i class="fa-solid fa-copy"></i> 複製原始 CSV
+                                <i class="fa-solid fa-copy"></i> 複製內容
                             </button>
                         </div>
                         ${tableHtml}
@@ -874,11 +687,11 @@
                 `;
                 body.querySelector('#btnCopyCsv').addEventListener('click', () => {
                     copyToClipboard(textContent);
-                    showToast('已複製 CSV 內容！', 'success');
+                    showToast('已複製 CSV 試算表內容！', 'success');
                 });
 
             } else if (category === 'code' || ext === 'md' || ext === 'txt') {
-                // Text, Markdown & Code Viewer
+                // Text / Markdown / Code Preview Engine
                 const textContent = decodeDataUrlToText(file.dataUrl);
                 const lines = textContent.split('\n').length;
 
@@ -937,14 +750,14 @@
                 });
 
             } else {
-                // General File Metadata Card
+                // Word / Excel / PowerPoint / Archive file summary modal
                 body.innerHTML = `
                     <div class="text-center p-8 bg-slate-900 rounded-3xl border border-slate-800 max-w-md w-full shadow-xl">
                         <div class="w-20 h-20 ${iconMeta.color} rounded-2xl flex items-center justify-center mx-auto mb-4 text-4xl">
                             <i class="${iconMeta.icon}"></i>
                         </div>
                         <h4 class="font-bold text-lg text-slate-100 mb-1 truncate px-2">${escapeHtml(file.name)}</h4>
-                        <p class="text-xs text-slate-400 mb-6">${formatBytes(file.size)} • ${file.type || '一般檔案'}</p>
+                        <p class="text-xs text-slate-400 mb-6">${formatBytes(file.size)} • ${file.type || '一般文件檔案'}</p>
 
                         <button id="btnCardDownload" class="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-sm rounded-xl transition shadow-lg flex items-center justify-center gap-2">
                             <i class="fa-solid fa-download"></i>
@@ -1013,17 +826,12 @@
         function renderSimpleMarkdown(text) {
             if (!text) return '';
             let html = escapeHtml(text);
-            // Code block
             html = html.replace(/```([\s\S]*?)```/g, '<pre class="bg-slate-900 p-3 rounded-xl font-mono text-emerald-400 text-xs my-2 overflow-x-auto">$1</pre>');
-            // Headers
             html = html.replace(/^### (.*$)/gim, '<h3 class="text-base font-bold text-slate-100 my-2">$1</h3>');
             html = html.replace(/^## (.*$)/gim, '<h2 class="text-lg font-bold text-slate-100 my-2">$1</h2>');
             html = html.replace(/^# (.*$)/gim, '<h1 class="text-xl font-black text-emerald-400 my-3 pb-1 border-b border-slate-800">$1</h1>');
-            // Bold
             html = html.replace(/\*\*(.*?)\*\*/g, '<strong class="text-emerald-300 font-bold">$1</strong>');
-            // Lists
             html = html.replace(/^\s*[-*]\s+(.*$)/gim, '<li class="ml-4 list-disc text-slate-300">$1</li>');
-            // Newlines
             html = html.replace(/\n/g, '<br>');
             return html;
         }
@@ -1043,7 +851,6 @@
 
             const shareUrl = `${window.location.origin}${window.location.pathname}?fileId=${file.id}`;
 
-            // Generate QR code graphic
             new QRCode(container, {
                 text: shareUrl,
                 width: 200,
@@ -1060,32 +867,22 @@
             const container = document.getElementById('qrcodeContainer');
             const canvas = container.querySelector('canvas');
             const img = container.querySelector('img');
-
             let dataUrl = null;
+
             if (canvas) {
                 dataUrl = canvas.toDataURL('image/png');
             } else if (img && img.src) {
                 dataUrl = img.src;
             }
 
-            if (dataUrl) {
-                try {
-                    const blob = dataUrlToBlob(dataUrl);
-                    const url = URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = `QRCode_${currentModalFile ? currentModalFile.name.replace(/\.[^/.]+$/, "") : 'file'}.png`;
-                    document.body.appendChild(a);
-                    a.click();
-                    document.body.removeChild(a);
-                    setTimeout(() => URL.revokeObjectURL(url), 1000);
-                    showToast('二維碼圖檔已開始下載！', 'success');
-                } catch(e) {
-                    showToast('下載二維碼圖檔失敗', 'error');
-                }
-            } else {
-                showToast('二維碼尚在生成中，請稍後再試', 'error');
+            if (!dataUrl) {
+                showToast('二維碼仍在生成中，請稍後再試', 'error');
+                return;
             }
+
+            const cleanName = (currentModalFile ? currentModalFile.name : 'file').replace(/\.[^/.]+$/, "");
+            downloadDataUrlAsFile(dataUrl, `QRCode_${cleanName}.png`);
+            showToast('二維碼圖檔已成功開始下載！', 'success');
         }
 
         function copyToClipboard(text) {
@@ -1107,39 +904,30 @@
 
             if (sharedId) {
                 document.getElementById('sharedNoticeBanner').classList.remove('hidden');
-
-                // Try finding file in local memory or IDB or cloud
                 let targetFile = filesData.find(f => f.id === sharedId);
                 if (!targetFile) {
                     targetFile = await getFileFromIDB(sharedId);
-                }
-                if (!targetFile && db) {
-                    try {
-                        const cloudRef = doc(db, 'artifacts', appId, 'public', 'data', 'files', sharedId);
-                        const docSnap = await getDoc(cloudRef);
-                        if (docSnap.exists()) {
-                            targetFile = docSnap.data();
-                        }
-                    } catch(e) {}
                 }
 
                 if (targetFile) {
                     openPreviewModal(targetFile);
                     showToast(`已開啟分享檔案：${targetFile.name}`, 'success');
                 } else {
-                    showToast('找不到對應的分享檔案，可能該檔案尚未同步至雲端', 'error');
+                    showToast('找不到對應的分享檔案記錄', 'error');
                 }
             }
         }
 
-        document.addEventListener('DOMContentLoaded', () => {
-            initFirebase();
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Load saved files from IndexedDB
+            filesData = await getAllFilesFromIDB();
+            renderFiles();
+            checkUrlParamForFile();
 
-            // Prevent browser default drop behavior everywhere on page
+            // Drag and Drop global protection
             window.addEventListener('dragover', (e) => e.preventDefault(), false);
             window.addEventListener('drop', (e) => e.preventDefault(), false);
 
-            // Drag and Drop Zone
             const dropZone = document.getElementById('dropZone');
             const fileInput = document.getElementById('fileInput');
 
@@ -1175,8 +963,7 @@
             dropZone.addEventListener('drop', (e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                const files = e.dataTransfer.files;
-                handleFilesUpload(files);
+                handleFilesUpload(e.dataTransfer.files);
             });
 
             // Search Filter
