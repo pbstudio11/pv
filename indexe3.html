@@ -1,0 +1,983 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>全功能線上 EPUB 閱讀器 (具備書庫保存與進度記憶功能)</title>
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- JSZip (EPUB 檔案解壓縮必備) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    
+    <!-- epub.js 核心庫 -->
+    <script src="https://cdn.jsdelivr.net/npm/epubjs/dist/epub.min.js"></script>
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        sepia: {
+                            50: '#fbf0d9',
+                            100: '#f4ecd8',
+                            800: '#5f4b32',
+                            900: '#3d2e1e'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        #viewer {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: all 0.3s ease;
+        }
+
+        #viewer iframe {
+            border: none;
+            background: transparent !important;
+        }
+
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        #image-modal {
+            transition: opacity 0.2s ease;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-100 h-screen flex flex-col font-sans overflow-hidden transition-colors duration-200">
+
+    <!-- 頂部控制導覽列 -->
+    <header class="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-2.5 flex items-center justify-between shadow-sm z-20">
+        <!-- 左側：目錄與書庫按鈕與書名 -->
+        <div class="flex items-center space-x-2 sm:space-x-3">
+            <button id="toc-btn" class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 transition" title="章節目錄">
+                <i class="fa-solid fa-list-ul text-lg"></i>
+            </button>
+            <button id="library-btn" class="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-indigo-600 dark:text-indigo-400 transition" title="我的書庫">
+                <i class="fa-solid fa-book-bookmark text-lg"></i>
+            </button>
+            <div class="truncate max-w-[140px] sm:max-w-xs md:max-w-md">
+                <h1 id="book-title" class="font-bold text-sm sm:text-base md:text-lg truncate">EPUB 閱讀器 (具備書庫自動保存)</h1>
+                <p id="book-author" class="text-xs text-gray-500 dark:text-gray-400 truncate">請載入檔案或使用範例書</p>
+            </div>
+        </div>
+
+        <!-- 右側：功能操作面板 -->
+        <div class="flex items-center space-x-1.5 sm:space-x-3">
+            <!-- 排版方向切換 -->
+            <button id="layout-toggle" class="px-2.5 py-1.5 rounded-lg border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 text-xs sm:text-sm font-medium flex items-center space-x-1.5 transition shadow-sm" title="切換直書/橫書">
+                <i class="fa-solid fa-arrows-split-up-and-left text-indigo-500"></i>
+                <span id="layout-text" class="hidden sm:inline">橫排閱讀</span>
+            </button>
+
+            <!-- 頁面模式切換 -->
+            <button id="spread-toggle" class="px-2.5 py-1.5 rounded-lg border border-gray-300 dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 text-xs sm:text-sm font-medium flex items-center space-x-1.5 transition shadow-sm" title="切換單頁/雙頁顯示">
+                <i class="fa-solid fa-file text-indigo-500"></i>
+                <span id="spread-text" class="hidden sm:inline">單頁顯示</span>
+            </button>
+
+            <!-- 字體系列選擇 -->
+            <select id="font-family-select" class="hidden md:block text-xs bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg px-2 py-1.5 text-gray-700 dark:text-gray-200 focus:outline-none">
+                <option value="system">系統預設</option>
+                <option value="serif">襯線字型 (宋體)</option>
+                <option value="sans">無襯線字型 (黑體)</option>
+            </select>
+
+            <!-- 字體縮放按鈕 -->
+            <div class="hidden lg:flex items-center bg-gray-100 dark:bg-gray-700 rounded-lg p-1 border border-gray-200 dark:border-gray-600">
+                <button id="font-decrease" class="w-7 h-7 flex items-center justify-center hover:bg-white dark:hover:bg-gray-600 rounded text-xs font-bold transition">A-</button>
+                <span id="font-size-display" class="text-xs px-2 font-mono">100%</span>
+                <button id="font-increase" class="w-7 h-7 flex items-center justify-center hover:bg-white dark:hover:bg-gray-600 rounded text-xs font-bold transition">A+</button>
+            </div>
+
+            <!-- 主題切換 -->
+            <div class="flex items-center space-x-1 bg-gray-100 dark:bg-gray-700 p-1 rounded-lg border border-gray-200 dark:border-gray-600">
+                <button data-theme="light" class="theme-btn w-6 h-6 rounded-full bg-white border border-gray-300 shadow-sm" title="明亮主題"></button>
+                <button data-theme="sepia" class="theme-btn w-6 h-6 rounded-full bg-sepia-100 border border-sepia-800 shadow-sm" title="羊皮紙主題"></button>
+                <button data-theme="dark" class="theme-btn w-6 h-6 rounded-full bg-gray-900 border border-gray-600 shadow-sm" title="暗黑主題"></button>
+            </div>
+
+            <!-- 返回書庫按鈕 -->
+            <button id="exit-btn" class="hidden bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-900/40 dark:hover:bg-indigo-900/60 text-indigo-600 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition flex items-center space-x-1.5 shadow-sm" title="返回書庫總覽">
+                <i class="fa-solid fa-grid-2"></i>
+                <span class="hidden sm:inline">返回書庫</span>
+            </button>
+
+            <!-- 開啟本機檔案 -->
+            <label class="cursor-pointer bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition flex items-center space-x-1.5 shadow">
+                <i class="fa-solid fa-plus"></i>
+                <span class="hidden sm:inline">匯入 EPUB</span>
+                <input type="file" id="file-input" accept=".epub" class="hidden">
+            </label>
+        </div>
+    </header>
+
+    <!-- 主要內容區 -->
+    <div class="relative flex-1 flex overflow-hidden">
+        
+        <!-- 目錄側邊欄 -->
+        <aside id="toc-sidebar" class="absolute inset-y-0 left-0 w-72 sm:w-80 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 z-30 transform -translate-x-full transition-transform duration-300 ease-in-out flex flex-col shadow-xl">
+            <div class="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between bg-gray-50 dark:bg-gray-800/50">
+                <h2 class="font-bold text-gray-700 dark:text-gray-200 flex items-center space-x-2">
+                    <i class="fa-solid fa-list-ul text-indigo-500"></i>
+                    <span>章節目錄</span>
+                </h2>
+                <button id="close-toc" class="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 rounded-lg">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+            <nav id="toc-list" class="flex-1 overflow-y-auto p-3 space-y-1 no-scrollbar text-sm">
+                <p class="text-gray-400 text-center py-8">未載入目錄</p>
+            </nav>
+        </aside>
+
+        <!-- 側邊欄遮罩 -->
+        <div id="sidebar-overlay" class="absolute inset-0 bg-black/40 backdrop-blur-sm z-20 hidden transition-opacity"></div>
+
+        <!-- 書庫總覽 / 歡迎介面 -->
+        <div id="upload-overlay" class="absolute inset-0 z-10 flex flex-col items-center justify-start p-4 sm:p-8 bg-gray-50 dark:bg-gray-900 overflow-y-auto">
+            <div class="max-w-4xl w-full flex flex-col items-center">
+                <!-- 頁頭標題 -->
+                <div class="text-center my-6">
+                    <div class="inline-flex items-center justify-center w-16 h-16 bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 rounded-2xl text-3xl mb-3 shadow-inner">
+                        <i class="fa-solid fa-book-bookmark"></i>
+                    </div>
+                    <h2 class="text-2xl font-bold text-gray-800 dark:text-gray-100">我的個人 EPUB 書庫</h2>
+                    <p class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mt-1">
+                        書籍上傳後會<b>自動永久存放在此瀏覽器</b>中，並自動記錄上次閱讀頁碼，隨時開啟隨時閱讀！
+                    </p>
+                </div>
+
+                <!-- 上傳與範例按鈕卡片 -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full max-w-xl mb-8">
+                    <button onclick="document.getElementById('file-input').click()" class="flex items-center justify-center space-x-3 bg-indigo-600 hover:bg-indigo-700 text-white font-medium p-4 rounded-xl shadow-lg transition transform hover:-translate-y-0.5">
+                        <i class="fa-solid fa-file-circle-plus text-2xl"></i>
+                        <div class="text-left">
+                            <div class="text-sm font-bold">新增 EPUB 電子書</div>
+                            <div class="text-xs text-indigo-200">選擇本機檔案並存入書庫</div>
+                        </div>
+                    </button>
+                    <button id="load-sample-btn" class="flex items-center justify-center space-x-3 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-750 border border-gray-200 dark:border-gray-700 font-medium p-4 rounded-xl shadow-sm transition transform hover:-translate-y-0.5">
+                        <i class="fa-solid fa-wand-magic-sparkles text-2xl text-amber-500"></i>
+                        <div class="text-left">
+                            <div class="text-sm font-bold text-gray-800 dark:text-gray-200">體驗多語系範例書</div>
+                            <div class="text-xs text-gray-400">中日英/直排與高畫質圖片</div>
+                        </div>
+                    </button>
+                </div>
+
+                <!-- 已保存的書籍清單 (書庫區) -->
+                <div class="w-full">
+                    <div class="flex items-center justify-between border-b border-gray-200 dark:border-gray-700 pb-3 mb-4">
+                        <h3 class="font-bold text-lg text-gray-800 dark:text-gray-200 flex items-center space-x-2">
+                            <i class="fa-solid fa-box-archive text-indigo-500"></i>
+                            <span>已儲存的書籍 (<span id="library-count">0</span>)</span>
+                        </h3>
+                        <span class="text-xs text-gray-400">點擊書籍卡片即可繼續閱讀</span>
+                    </div>
+
+                    <div id="library-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                        <!-- 書籍卡片將動態注入於此 -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 主閱讀容器 -->
+        <main class="relative flex-1 flex items-center justify-center p-2 sm:p-6 overflow-hidden">
+            <!-- 左右翻頁導航按鈕 -->
+            <button id="prev-btn" class="absolute left-2 sm:left-4 z-10 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white/80 dark:bg-gray-800/80 shadow-lg border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 flex items-center justify-center hover:bg-indigo-50 dark:hover:bg-gray-700 hover:text-indigo-600 transition backdrop-blur-sm">
+                <i class="fa-solid fa-chevron-left text-lg"></i>
+            </button>
+
+            <!-- EPUB 電子書渲染地帶 -->
+            <div id="viewer-container" class="w-full h-full max-w-5xl bg-white dark:bg-gray-800 rounded-xl shadow-md border border-gray-200/80 dark:border-gray-700/80 overflow-hidden relative">
+                <div id="viewer"></div>
+            </div>
+
+            <button id="next-btn" class="absolute right-2 sm:right-4 z-10 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white/80 dark:bg-gray-800/80 shadow-lg border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 flex items-center justify-center hover:bg-indigo-50 dark:hover:bg-gray-700 hover:text-indigo-600 transition backdrop-blur-sm">
+                <i class="fa-solid fa-chevron-right text-lg"></i>
+            </button>
+        </main>
+    </div>
+
+    <!-- 圖片點擊放大燈箱 Modal -->
+    <div id="image-modal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 hidden opacity-0 pointer-events-none">
+        <div class="relative max-w-4xl max-h-[90vh] flex flex-col items-center">
+            <button id="close-modal" class="absolute -top-12 right-0 text-white hover:text-gray-300 text-2xl p-2 focus:outline-none">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+            <img id="modal-img" src="" alt="預覽大圖" class="max-w-full max-h-[80vh] object-contain rounded-lg shadow-2xl bg-white/5 p-1">
+        </div>
+    </div>
+
+    <!-- 訊息提示 Toast 通知 -->
+    <div id="toast" class="fixed bottom-16 right-4 z-50 bg-gray-900/90 text-white px-4 py-3 rounded-xl shadow-2xl backdrop-blur-md flex items-center space-x-2 border border-gray-700 transition-all duration-300 transform translate-y-10 opacity-0 hidden">
+        <i class="fa-solid fa-circle-check text-emerald-400 text-lg"></i>
+        <span id="toast-msg" class="text-xs sm:text-sm font-medium">系統通知</span>
+    </div>
+
+    <!-- 底部閱讀進度條與資訊 -->
+    <footer class="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 px-4 py-2.5 flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 z-20">
+        <div class="flex items-center space-x-2 w-full max-w-xl mx-auto">
+            <span id="curr-location" class="font-mono whitespace-nowrap min-w-[3rem] text-right">0%</span>
+            <input type="range" id="progress-slider" min="0" max="100" value="0" step="1" class="w-full h-1.5 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-indigo-600">
+            <span id="page-info" class="whitespace-nowrap hidden sm:inline font-mono">頁碼準備中...</span>
+        </div>
+    </footer>
+
+    <script>
+        /**
+         * IndexedDB 管理模組，負責將 EPUB 檔案與閱讀進度永久儲存於瀏覽器內
+         */
+        class BookStorage {
+            constructor() {
+                this.dbName = 'EpubReaderStorage';
+                this.dbVersion = 1;
+                this.db = null;
+            }
+
+            async init() {
+                return new Promise((resolve, reject) => {
+                    const request = indexedDB.open(this.dbName, this.dbVersion);
+
+                    request.onupgradeneeded = (e) => {
+                        const db = e.target.result;
+                        if (!db.objectStoreNames.contains('books')) {
+                            const store = db.createObjectStore('books', { keyPath: 'id' });
+                            store.createIndex('updatedAt', 'updatedAt', { unique: false });
+                        }
+                    };
+
+                    request.onsuccess = (e) => {
+                        this.db = e.target.result;
+                        resolve(this.db);
+                    };
+
+                    request.onerror = (e) => reject(e.target.error);
+                });
+            }
+
+            async saveBook(bookData) {
+                if (!this.db) await this.init();
+                return new Promise((resolve, reject) => {
+                    const transaction = this.db.transaction(['books'], 'readwrite');
+                    const store = transaction.objectStore('books');
+                    const request = store.put({
+                        id: bookData.id,
+                        title: bookData.title || '未命名書籍',
+                        author: bookData.author || '未知作者',
+                        arrayBuffer: bookData.arrayBuffer,
+                        lastLocationCfi: bookData.lastLocationCfi || null,
+                        progressPercent: bookData.progressPercent || 0,
+                        updatedAt: Date.now()
+                    });
+
+                    request.onsuccess = () => resolve();
+                    request.onerror = (e) => reject(e.target.error);
+                });
+            }
+
+            async getAllBooks() {
+                if (!this.db) await this.init();
+                return new Promise((resolve, reject) => {
+                    const transaction = this.db.transaction(['books'], 'readonly');
+                    const store = transaction.objectStore('books');
+                    const request = store.getAll();
+
+                    request.onsuccess = () => {
+                        const books = request.result || [];
+                        books.sort((a, b) => b.updatedAt - a.updatedAt);
+                        resolve(books);
+                    };
+                    request.onerror = (e) => reject(e.target.error);
+                });
+            }
+
+            async getBook(id) {
+                if (!this.db) await this.init();
+                return new Promise((resolve, reject) => {
+                    const transaction = this.db.transaction(['books'], 'readonly');
+                    const store = transaction.objectStore('books');
+                    const request = store.get(id);
+
+                    request.onsuccess = () => resolve(request.result);
+                    request.onerror = (e) => reject(e.target.error);
+                });
+            }
+
+            async updateProgress(id, cfi, percentage) {
+                if (!this.db) await this.init();
+                const book = await this.getBook(id);
+                if (book) {
+                    book.lastLocationCfi = cfi;
+                    book.progressPercent = percentage;
+                    book.updatedAt = Date.now();
+                    await this.saveBook(book);
+                }
+            }
+
+            async deleteBook(id) {
+                if (!this.db) await this.init();
+                return new Promise((resolve, reject) => {
+                    const transaction = this.db.transaction(['books'], 'readwrite');
+                    const store = transaction.objectStore('books');
+                    const request = store.delete(id);
+
+                    request.onsuccess = () => resolve();
+                    request.onerror = (e) => reject(e.target.error);
+                });
+            }
+        }
+
+        class EpubReaderApp {
+            constructor() {
+                this.storage = new BookStorage();
+                this.currentBookId = null;
+                this.book = null;
+                this.rendition = null;
+                this.toc = [];
+                
+                this.isVertical = false;
+                this.isSinglePage = true;
+                this.currentTheme = 'light';
+                this.fontSizePercent = 100;
+                this.fontFamily = 'system';
+                
+                this.dom = {
+                    fileInput: document.getElementById('file-input'),
+                    exitBtn: document.getElementById('exit-btn'),
+                    libraryBtn: document.getElementById('library-btn'),
+                    loadSampleBtn: document.getElementById('load-sample-btn'),
+                    uploadOverlay: document.getElementById('upload-overlay'),
+                    libraryGrid: document.getElementById('library-grid'),
+                    libraryCount: document.getElementById('library-count'),
+                    viewer: document.getElementById('viewer'),
+                    prevBtn: document.getElementById('prev-btn'),
+                    nextBtn: document.getElementById('next-btn'),
+                    tocBtn: document.getElementById('toc-btn'),
+                    closeTocBtn: document.getElementById('close-toc'),
+                    tocSidebar: document.getElementById('toc-sidebar'),
+                    sidebarOverlay: document.getElementById('sidebar-overlay'),
+                    tocList: document.getElementById('toc-list'),
+                    bookTitle: document.getElementById('book-title'),
+                    bookAuthor: document.getElementById('book-author'),
+                    layoutToggle: document.getElementById('layout-toggle'),
+                    layoutText: document.getElementById('layout-text'),
+                    spreadToggle: document.getElementById('spread-toggle'),
+                    spreadText: document.getElementById('spread-text'),
+                    fontFamilySelect: document.getElementById('font-family-select'),
+                    fontIncrease: document.getElementById('font-increase'),
+                    fontDecrease: document.getElementById('font-decrease'),
+                    fontSizeDisplay: document.getElementById('font-size-display'),
+                    themeBtns: document.querySelectorAll('.theme-btn'),
+                    progressSlider: document.getElementById('progress-slider'),
+                    currLocation: document.getElementById('curr-location'),
+                    pageInfo: document.getElementById('page-info'),
+                    imageModal: document.getElementById('image-modal'),
+                    modalImg: document.getElementById('modal-img'),
+                    closeModal: document.getElementById('close-modal'),
+                    toast: document.getElementById('toast'),
+                    toastMsg: document.getElementById('toast-msg')
+                };
+
+                this.initEvents();
+                this.refreshLibraryUI();
+            }
+
+            initEvents() {
+                this.dom.fileInput.addEventListener('change', async (e) => {
+                    const file = e.target.files[0];
+                    if (file) {
+                        const arrayBuffer = await file.arrayBuffer();
+                        const bookId = 'book_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4);
+                        await this.loadAndSaveNewBook(bookId, arrayBuffer, file.name.replace('.epub', ''));
+                    }
+                });
+
+                this.dom.loadSampleBtn.addEventListener('click', () => {
+                    this.loadMultiLanguageSampleEpub();
+                });
+
+                if (this.dom.exitBtn) {
+                    this.dom.exitBtn.addEventListener('click', () => this.showLibraryOverlay());
+                }
+
+                if (this.dom.libraryBtn) {
+                    this.dom.libraryBtn.addEventListener('click', () => this.showLibraryOverlay());
+                }
+
+                window.addEventListener('dragover', (e) => e.preventDefault());
+                window.addEventListener('drop', async (e) => {
+                    e.preventDefault();
+                    if (e.dataTransfer.files.length > 0 && e.dataTransfer.files[0].name.endsWith('.epub')) {
+                        const file = e.dataTransfer.files[0];
+                        const arrayBuffer = await file.arrayBuffer();
+                        const bookId = 'book_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4);
+                        await this.loadAndSaveNewBook(bookId, arrayBuffer, file.name.replace('.epub', ''));
+                    }
+                });
+
+                this.dom.prevBtn.addEventListener('click', () => this.prevPage());
+                this.dom.nextBtn.addEventListener('click', () => this.nextPage());
+
+                this.dom.tocBtn.addEventListener('click', () => this.toggleToc(true));
+                this.dom.closeTocBtn.addEventListener('click', () => this.toggleToc(false));
+                this.dom.sidebarOverlay.addEventListener('click', () => this.toggleToc(false));
+
+                this.dom.layoutToggle.addEventListener('click', () => this.toggleLayoutMode());
+                if (this.dom.spreadToggle) {
+                    this.dom.spreadToggle.addEventListener('click', () => this.toggleSpreadMode());
+                }
+
+                this.dom.fontFamilySelect.addEventListener('change', (e) => {
+                    this.fontFamily = e.target.value;
+                    this.applyCurrentStyle();
+                });
+
+                this.dom.fontIncrease.addEventListener('click', () => this.changeFontSize(10));
+                this.dom.fontDecrease.addEventListener('click', () => this.changeFontSize(-10));
+
+                this.dom.themeBtns.forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        this.setTheme(e.currentTarget.getAttribute('data-theme'));
+                    });
+                });
+
+                this.dom.progressSlider.addEventListener('change', (e) => {
+                    if (this.book && this.book.locations && this.book.locations.length()) {
+                        const percentage = e.target.value / 100;
+                        const cfi = this.book.locations.cfiFromPercentage(percentage);
+                        if (cfi) this.rendition.display(cfi);
+                    }
+                });
+
+                this.dom.closeModal.addEventListener('click', () => this.closeImageModal());
+                this.dom.imageModal.addEventListener('click', (e) => {
+                    if (e.target === this.dom.imageModal) this.closeImageModal();
+                });
+
+                document.addEventListener('keydown', (e) => {
+                    if (e.key === 'ArrowLeft') {
+                        this.isVertical ? this.nextPage() : this.prevPage();
+                    } else if (e.key === 'ArrowRight') {
+                        this.isVertical ? this.prevPage() : this.nextPage();
+                    } else if (e.key === 'Escape') {
+                        this.closeImageModal();
+                    }
+                });
+            }
+
+            async refreshLibraryUI() {
+                const books = await this.storage.getAllBooks();
+                this.dom.libraryCount.textContent = books.length;
+                this.dom.libraryGrid.innerHTML = '';
+
+                if (books.length === 0) {
+                    this.dom.libraryGrid.innerHTML = `
+                        <div class="col-span-full py-8 text-center text-gray-400 bg-white dark:bg-gray-800 rounded-xl border border-dashed border-gray-300 dark:border-gray-700">
+                            <i class="fa-solid fa-book-open text-3xl mb-2 text-gray-300 dark:text-gray-600"></i>
+                            <p class="text-sm">書庫中尚無儲存的書籍，請上傳 EPUB 或載入範例書！</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                books.forEach(book => {
+                    const card = document.createElement('div');
+                    card.className = 'group relative bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 hover:border-indigo-500 dark:hover:border-indigo-500 p-4 rounded-xl shadow-sm hover:shadow-md transition cursor-pointer flex flex-col justify-between';
+                    
+                    const percent = book.progressPercent || 0;
+                    const dateStr = new Date(book.updatedAt).toLocaleDateString();
+
+                    card.innerHTML = `
+                        <div>
+                            <div class="flex items-start justify-between mb-2">
+                                <div class="w-9 h-9 rounded-lg bg-indigo-50 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold text-sm">
+                                    <i class="fa-solid fa-book"></i>
+                                </div>
+                                <button class="delete-book-btn p-1.5 text-gray-400 hover:text-rose-500 transition rounded-lg" title="刪除此書">
+                                    <i class="fa-solid fa-trash-can text-sm"></i>
+                                </button>
+                            </div>
+                            <h4 class="font-bold text-gray-800 dark:text-gray-100 text-sm line-clamp-2 mb-1 group-hover:text-indigo-600 transition">${this.escapeHtml(book.title)}</h4>
+                            <p class="text-xs text-gray-500 dark:text-gray-400 line-clamp-1 mb-3">${this.escapeHtml(book.author)}</p>
+                        </div>
+                        <div>
+                            <div class="w-full bg-gray-200 dark:bg-gray-700 h-1.5 rounded-full overflow-hidden mb-2">
+                                <div class="bg-indigo-600 h-full transition-all duration-300" style="width: ${percent}%"></div>
+                            </div>
+                            <div class="flex justify-between items-center text-[10px] text-gray-400">
+                                <span>閱讀進度: ${percent}%</span>
+                                <span>${dateStr}</span>
+                            </div>
+                        </div>
+                    `;
+
+                    // 點擊卡片開啟書籍
+                    card.addEventListener('click', (e) => {
+                        if (!e.target.closest('.delete-book-btn')) {
+                            this.openBookFromStorage(book.id);
+                        }
+                    });
+
+                    // 刪除按鈕
+                    card.querySelector('.delete-book-btn').addEventListener('click', async (e) => {
+                        e.stopPropagation();
+                        await this.storage.deleteBook(book.id);
+                        this.showToast(`已從書庫中移除《${book.title}》`);
+                        this.refreshLibraryUI();
+                    });
+
+                    this.dom.libraryGrid.appendChild(card);
+                });
+            }
+
+            escapeHtml(str) {
+                return str ? str.replace(/[&<>"']/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m])) : '';
+            }
+
+            showLibraryOverlay() {
+                this.dom.uploadOverlay.classList.remove('hidden');
+                if (this.dom.exitBtn) this.dom.exitBtn.classList.add('hidden');
+                this.refreshLibraryUI();
+            }
+
+            async loadAndSaveNewBook(bookId, arrayBuffer, fallbackTitle = '新書籍') {
+                this.currentBookId = bookId;
+
+                // 先預先解析標題作者
+                const tempBook = ePub(arrayBuffer);
+                const meta = await tempBook.loaded.metadata;
+                
+                const title = meta.title || fallbackTitle;
+                const author = meta.creator || '未知作者';
+
+                await this.storage.saveBook({
+                    id: bookId,
+                    title: title,
+                    author: author,
+                    arrayBuffer: arrayBuffer,
+                    lastLocationCfi: null,
+                    progressPercent: 0
+                });
+
+                this.showToast(`成功加入書庫：《${title}》`);
+                await this.renderEpub(arrayBuffer, null);
+            }
+
+            async openBookFromStorage(bookId) {
+                const bookData = await this.storage.getBook(bookId);
+                if (!bookData) {
+                    this.showToast("找不到該書籍檔案。");
+                    return;
+                }
+
+                this.currentBookId = bookId;
+                await this.renderEpub(bookData.arrayBuffer, bookData.lastLocationCfi);
+            }
+
+            showToast(message) {
+                if (!this.dom.toast) return;
+                this.dom.toastMsg.textContent = message;
+                this.dom.toast.classList.remove('hidden', 'translate-y-10', 'opacity-0');
+                setTimeout(() => {
+                    this.dom.toast.classList.add('translate-y-10', 'opacity-0');
+                    setTimeout(() => this.dom.toast.classList.add('hidden'), 300);
+                }, 3500);
+            }
+
+            async renderEpub(arrayBuffer, initialCfi) {
+                try {
+                    this.dom.uploadOverlay.classList.add('hidden');
+                    if (this.dom.exitBtn) this.dom.exitBtn.classList.remove('hidden');
+
+                    if (this.rendition) {
+                        try { this.rendition.destroy(); } catch(e){}
+                        this.rendition = null;
+                    }
+                    if (this.book) {
+                        try { this.book.destroy(); } catch(e){}
+                        this.book = null;
+                    }
+                    this.dom.viewer.innerHTML = '';
+
+                    this.book = ePub(arrayBuffer);
+
+                    this.rendition = this.book.renderTo('viewer', {
+                        width: '100%',
+                        height: '100%',
+                        spread: this.isSinglePage ? 'none' : 'auto',
+                        flow: 'paginated'
+                    });
+
+                    // 載入預設位置或上一次閱讀進度
+                    if (initialCfi) {
+                        this.rendition.display(initialCfi);
+                    } else {
+                        this.rendition.display();
+                    }
+
+                    this.book.loaded.metadata.then(meta => {
+                        this.dom.bookTitle.textContent = meta.title || '無標題電子書';
+                        this.dom.bookAuthor.textContent = meta.creator || '未知作者';
+                    });
+
+                    this.book.loaded.navigation.then(nav => {
+                        this.toc = nav.toc;
+                        this.renderToc();
+                    });
+
+                    this.book.ready.then(() => {
+                        return this.book.locations.generate(1000);
+                    }).then(() => {
+                        this.updateProgress();
+                    });
+
+                    this.rendition.on('relocated', (location) => {
+                        this.updateProgress(location);
+                        this.injectImageHandlers();
+
+                        // 自動把當前 CFI 與進度更新寫入 IndexedDB
+                        if (this.currentBookId && location && location.start) {
+                            const cfi = location.start.cfi;
+                            const percentage = Math.floor(this.book.locations.percentageFromCfi(cfi) * 100) || 0;
+                            this.storage.updateProgress(this.currentBookId, cfi, percentage);
+                        }
+                    });
+
+                    this.registerThemes();
+                    this.applyCurrentStyle();
+                } catch (err) {
+                    console.error("渲染 EPUB 失敗:", err);
+                    this.showToast("無法開啟書籍，可能檔案格式有所損壞。");
+                    this.showLibraryOverlay();
+                }
+            }
+
+            toggleSpreadMode() {
+                this.isSinglePage = !this.isSinglePage;
+                if (this.dom.spreadText) {
+                    this.dom.spreadText.textContent = this.isSinglePage ? '單頁顯示' : '雙頁顯示';
+                }
+                if (this.rendition) {
+                    this.rendition.spread(this.isSinglePage ? 'none' : 'auto');
+                }
+            }
+
+            toggleLayoutMode() {
+                this.isVertical = !this.isVertical;
+                if (this.isVertical) {
+                    this.dom.layoutText.textContent = '直排閱讀';
+                    this.dom.layoutToggle.classList.add('border-indigo-500', 'text-indigo-600', 'bg-indigo-50');
+                } else {
+                    this.dom.layoutText.textContent = '橫排閱讀';
+                    this.dom.layoutToggle.classList.remove('border-indigo-500', 'text-indigo-600', 'bg-indigo-50');
+                }
+                this.applyCurrentStyle();
+            }
+
+            registerThemes() {
+                if (!this.rendition) return;
+                this.rendition.themes.register('light', { 'body': { 'background': '#ffffff !important', 'color': '#1f2937 !important' } });
+                this.rendition.themes.register('sepia', { 'body': { 'background': '#f4ecd8 !important', 'color': '#3d2e1e !important' } });
+                this.rendition.themes.register('dark', { 'body': { 'background': '#1f2937 !important', 'color': '#f3f4f6 !important' } });
+            }
+
+            applyCurrentStyle() {
+                if (!this.rendition) return;
+
+                this.rendition.themes.select(this.currentTheme);
+                this.rendition.themes.fontSize(`${this.fontSizePercent}%`);
+
+                let fontFamilyCss = 'system-ui, -apple-system, sans-serif';
+                if (this.fontFamily === 'serif') {
+                    fontFamilyCss = '"Noto Serif CJK TC", "Source Han Serif JP", "Times New Roman", serif';
+                } else if (this.fontFamily === 'sans') {
+                    fontFamilyCss = '"Noto Sans CJK TC", "Source Han Sans JP", "Microsoft JhengHei", sans-serif';
+                }
+
+                const layoutCss = this.isVertical ? `
+                    html, body, p, div, span, h1, h2, h3, h4, h5, h6 {
+                        writing-mode: vertical-rl !important;
+                        -webkit-writing-mode: vertical-rl !important;
+                        text-orientation: mixed !important;
+                        letter-spacing: 0.08em !important;
+                        line-height: 2.0 !important;
+                        font-family: ${fontFamilyCss} !important;
+                    }
+                    img {
+                        max-height: 80vh !important;
+                        max-width: 90% !important;
+                        width: auto !important;
+                        height: auto !important;
+                        object-fit: contain !important;
+                        margin: 1.5rem auto !important;
+                        display: block !important;
+                        cursor: zoom-in !important;
+                        border-radius: 4px;
+                    }
+                ` : `
+                    html, body, p, div, span, h1, h2, h3, h4, h5, h6 {
+                        writing-mode: horizontal-tb !important;
+                        -webkit-writing-mode: horizontal-tb !important;
+                        line-height: 1.7 !important;
+                        font-family: ${fontFamilyCss} !important;
+                    }
+                    img {
+                        max-width: 100% !important;
+                        height: auto !important;
+                        max-height: 75vh !important;
+                        object-fit: contain !important;
+                        margin: 1.5rem auto !important;
+                        display: block !important;
+                        cursor: zoom-in !important;
+                        border-radius: 6px;
+                    }
+                `;
+
+                const iframe = this.dom.viewer.querySelector('iframe');
+                if (iframe && iframe.contentDocument) {
+                    let styleTag = iframe.contentDocument.getElementById('custom-layout-style');
+                    if (!styleTag) {
+                        styleTag = iframe.contentDocument.createElement('style');
+                        styleTag.id = 'custom-layout-style';
+                        iframe.contentDocument.head.appendChild(styleTag);
+                    }
+                    styleTag.innerHTML = layoutCss;
+                    this.injectImageHandlers();
+                }
+            }
+
+            injectImageHandlers() {
+                const iframe = this.dom.viewer.querySelector('iframe');
+                if (!iframe || !iframe.contentDocument) return;
+
+                const images = iframe.contentDocument.querySelectorAll('img');
+                images.forEach(img => {
+                    img.style.cursor = 'zoom-in';
+                    img.onclick = () => {
+                        this.dom.modalImg.src = img.src;
+                        this.dom.imageModal.classList.remove('hidden', 'pointer-events-none');
+                        this.dom.imageModal.classList.add('opacity-100');
+                    };
+                });
+            }
+
+            closeImageModal() {
+                this.dom.imageModal.classList.remove('opacity-100');
+                this.dom.imageModal.classList.add('hidden', 'pointer-events-none');
+                this.dom.modalImg.src = '';
+            }
+
+            setTheme(theme) {
+                this.currentTheme = theme;
+                const container = document.getElementById('viewer-container');
+                container.classList.remove('bg-white', 'bg-sepia-100', 'bg-gray-800');
+                
+                if (theme === 'light') {
+                    container.classList.add('bg-white');
+                    document.documentElement.classList.remove('dark');
+                } else if (theme === 'sepia') {
+                    container.classList.add('bg-sepia-100');
+                    document.documentElement.classList.remove('dark');
+                } else if (theme === 'dark') {
+                    container.classList.add('bg-gray-800');
+                    document.documentElement.classList.add('dark');
+                }
+
+                this.applyCurrentStyle();
+            }
+
+            changeFontSize(delta) {
+                this.fontSizePercent = Math.min(Math.max(70, this.fontSizePercent + delta), 200);
+                this.dom.fontSizeDisplay.textContent = `${this.fontSizePercent}%`;
+                this.applyCurrentStyle();
+            }
+
+            prevPage() { if (this.rendition) this.rendition.prev(); }
+            nextPage() { if (this.rendition) this.rendition.next(); }
+
+            renderToc() {
+                this.dom.tocList.innerHTML = '';
+                if (!this.toc || this.toc.length === 0) {
+                    this.dom.tocList.innerHTML = '<p class="text-gray-400 text-center py-4">無可用目錄</p>';
+                    return;
+                }
+
+                const createTocNodes = (items) => {
+                    const ul = document.createElement('ul');
+                    ul.className = 'space-y-1 pl-2';
+
+                    items.forEach(item => {
+                        const li = document.createElement('li');
+                        const a = document.createElement('a');
+                        a.textContent = item.label.trim();
+                        a.href = item.href;
+                        a.className = 'block px-3 py-2 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-indigo-50 dark:hover:bg-gray-700 hover:text-indigo-600 dark:hover:text-indigo-400 transition truncate cursor-pointer';
+                        
+                        a.addEventListener('click', (e) => {
+                            e.preventDefault();
+                            this.rendition.display(item.href);
+                            this.toggleToc(false);
+                        });
+
+                        li.appendChild(a);
+                        if (item.subitems && item.subitems.length > 0) {
+                            li.appendChild(createTocNodes(item.subitems));
+                        }
+                        ul.appendChild(li);
+                    });
+                    return ul;
+                };
+
+                this.dom.tocList.appendChild(createTocNodes(this.toc));
+            }
+
+            toggleToc(show) {
+                if (show) {
+                    this.dom.tocSidebar.classList.remove('-translate-x-full');
+                    this.dom.sidebarOverlay.classList.remove('hidden');
+                } else {
+                    this.dom.tocSidebar.classList.add('-translate-x-full');
+                    this.dom.sidebarOverlay.classList.add('hidden');
+                }
+            }
+
+            updateProgress(location) {
+                if (!this.book || !this.book.locations) return;
+
+                if (location && location.start) {
+                    const percentage = Math.floor(this.book.locations.percentageFromCfi(location.start.cfi) * 100) || 0;
+                    this.dom.progressSlider.value = percentage;
+                    this.dom.currLocation.textContent = `${percentage}%`;
+                    
+                    if (location.start.displayed) {
+                        this.dom.pageInfo.textContent = `第 ${location.start.displayed.page} / ${location.start.displayed.total} 頁`;
+                    }
+                }
+            }
+
+            async loadMultiLanguageSampleEpub() {
+                const zip = new JSZip();
+
+                zip.file("mimetype", "application/epub+zip");
+                zip.file("META-INF/container.xml", `<?xml version="1.0"?>
+<container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container">
+  <rootfiles>
+    <rootfile full-path="OEBPS/content.opf" media-type="application/oebps-package+xml"/>
+  </rootfiles>
+</container>`);
+
+                zip.file("OEBPS/content.opf", `<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://www.idpf.org/2007/opf" unique-identifier="BookId" version="2.0">
+  <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
+    <dc:title>多國語系與圖片閱讀範例 (中/日/英)</dc:title>
+    <dc:creator>System Demo</dc:creator>
+    <dc:language>zh-TW</dc:language>
+  </metadata>
+  <manifest>
+    <item id="toc" href="toc.ncx" media-type="application/x-dtbncx+xml"/>
+    <item id="ch1" href="chapter1.html" media-type="application/xhtml+xml"/>
+    <item id="ch2" href="chapter2.html" media-type="application/xhtml+xml"/>
+    <item id="ch3" href="chapter3.html" media-type="application/xhtml+xml"/>
+    <item id="sample-img" href="sample.svg" media-type="image/svg+xml"/>
+  </manifest>
+  <spine toc="toc">
+    <itemref idref="ch1"/>
+    <itemref idref="ch2"/>
+    <itemref idref="ch3"/>
+  </spine>
+</package>`);
+
+                zip.file("OEBPS/toc.ncx", `<?xml version="1.0" encoding="UTF-8"?>
+<ncx xmlns="http://www.daisy.org/z3986/2005/ncx/" version="2005-1">
+  <head><meta name="dtb:uid" content="BookId"/></head>
+  <docTitle><text>多國語系範例書</text></docTitle>
+  <navMap>
+    <navPoint id="np1" playOrder="1"><navLabel><text>第一章：中文繁體與圖片測試</text></navLabel><content src="chapter1.html"/></navPoint>
+    <navPoint id="np2" playOrder="2"><navLabel><text>第二章：日文文學與直排表現</text></navLabel><content src="chapter2.html"/></navPoint>
+    <navPoint id="np3" playOrder="3"><navLabel><text>第三章：英文長篇與段落排版</text></navLabel><content src="chapter3.html"/></navPoint>
+  </navMap>
+</ncx>`);
+
+                zip.file("OEBPS/sample.svg", `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 400" width="100%" height="100%">
+  <defs>
+    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#4f46e5;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#9333ea;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <rect width="600" height="400" fill="url(#grad)" rx="15"/>
+  <circle cx="300" cy="160" r="60" fill="#ffffff" opacity="0.9"/>
+  <path d="M 270 160 L 300 130 L 330 160 Z" fill="#4f46e5"/>
+  <text x="300" y="270" font-size="24" font-family="sans-serif" fill="#ffffff" font-weight="bold" text-anchor="middle">高畫質內嵌插圖範例</text>
+  <text x="300" y="305" font-size="14" font-family="sans-serif" fill="#e0e7ff" text-anchor="middle">點擊圖片可直接開啟全螢幕檢視燈箱</text>
+</svg>`);
+
+                zip.file("OEBPS/chapter1.html", `<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="zh-TW">
+<head><title>中文範例</title></head>
+<body>
+    <h1>第一章：中文繁體與高畫質圖片</h1>
+    <p>歡迎使用多國語系線上 EPUB 閱讀器。本系統不僅支援順暢的橫排閱讀，更針對繁體中文與日文書籍完美支援傳統的直排（縱書）閱讀模式。</p>
+    <div style="text-align:center;">
+        <img src="sample.svg" alt="示範插圖" />
+    </div>
+    <p>上方的圖片為高畫質向量圖示，在切換為直排或橫排模式時皆能自動調整比例，且點擊圖片即可放大預覽。</p>
+</body>
+</html>`);
+
+                zip.file("OEBPS/chapter2.html", `<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="ja">
+<head><title>日本語の章</title></head>
+<body>
+    <h1>第二章：日本語の縦書・横書テスト</h1>
+    <p>国境の長いトンネルを抜けると雪国であった。夜の底が白くなった。信号所に汽車が止まった。</p>
+    <p>日本語の電子書籍を読む際、直排（縦書き）モードに切り替えることで、日本の伝統的な文庫本や小説と同じような縦書きの読書体験を楽しむことができます。句読点や英数字の向きも適切にレンダリングされます。</p>
+</body>
+</html>`);
+
+                zip.file("OEBPS/chapter3.html", `<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
+<head><title>English Chapter</title></head>
+<body>
+    <h1>Chapter 3: English Literature &amp; Typography</h1>
+    <p>It was the best of times, it was the worst of times, it was the age of wisdom, it was the age of foolishness, it was the epoch of belief, it was the epoch of incredulity, it was the season of light, it was the season of darkness, it was the spring of hope, it was the winter of despair.</p>
+    <p>English and Western languages are optimized for horizontal pagination, providing comfortable reading line-lengths, proper word-spacing, and clear serif or sans-serif font choices.</p>
+</body>
+</html>`);
+
+                const blob = await zip.generateAsync({ type: "arraybuffer" });
+                await this.loadAndSaveNewBook('sample_book_multilang', blob, '多國語系範例書');
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            window.readerApp = new EpubReaderApp();
+        });
+    </script>
+</body>
+</html>
