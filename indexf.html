@@ -110,12 +110,12 @@
                     </div>
                     <h3 class="text-lg sm:text-xl font-bold text-slate-200 mb-2">拖曳檔案至此處，或點擊選取檔案寄託</h3>
                     <p class="text-xs sm:text-sm text-slate-400 max-w-md mb-6">
-                        支援 PDF、Word、Excel、TXT、程式碼、CSV 等各種文件與檔案格式。上傳後自動產生專屬二維碼與跨裝置分享連結。
+                        支援 圖片、PDF、Word、Excel、影音、TXT、程式碼、CSV 等格式。上傳後自動產生專屬二維碼與跨裝置分享連結。
                     </p>
                     <div class="flex flex-wrap items-center justify-center gap-3 text-xs text-slate-400">
-                        <span class="px-3 py-1.5 rounded-lg bg-slate-900/60 border border-slate-700/60"><i class="fa-solid fa-shield-halved text-emerald-400 mr-1.5"></i>本機加密傳輸</span>
+                        <span class="px-3 py-1.5 rounded-lg bg-slate-900/60 border border-slate-700/60"><i class="fa-solid fa-shield-halved text-emerald-400 mr-1.5"></i>本機加密儲存</span>
                         <span class="px-3 py-1.5 rounded-lg bg-slate-900/60 border border-slate-700/60"><i class="fa-solid fa-qrcode text-emerald-400 mr-1.5"></i>即時 QR Code</span>
-                        <span class="px-3 py-1.5 rounded-lg bg-slate-900/60 border border-slate-700/60"><i class="fa-solid fa-code text-emerald-400 mr-1.5"></i>線上文件預覽</span>
+                        <span class="px-3 py-1.5 rounded-lg bg-slate-900/60 border border-slate-700/60"><i class="fa-solid fa-eye text-emerald-400 mr-1.5"></i>全類型即時預覽</span>
                     </div>
                 </div>
 
@@ -137,8 +137,10 @@
                 <input type="text" id="searchInput" placeholder="搜尋檔案名稱或副檔名..." class="w-full bg-slate-800 border border-slate-700 rounded-xl pl-10 pr-4 py-2.5 text-sm text-slate-200 placeholder-slate-400 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition">
             </div>
             <div class="flex items-center gap-2 w-full sm:w-auto overflow-x-auto pb-1 sm:pb-0 text-xs">
-                <button data-filter="all" class="filter-btn active px-3.5 py-2 rounded-xl bg-emerald-600 text-white font-medium transition shadow-sm whitespace-nowrap">全部檔案 (<span id="countAll">0</span>)</button>
+                <button data-filter="all" class="filter-btn active px-3.5 py-2 rounded-xl bg-emerald-600 text-white font-medium transition shadow-sm whitespace-nowrap">全部 (<span id="countAll">0</span>)</button>
+                <button data-filter="image" class="filter-btn px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium transition whitespace-nowrap">圖片 (<span id="countImg">0</span>)</button>
                 <button data-filter="document" class="filter-btn px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium transition whitespace-nowrap">文件/PDF (<span id="countDocs">0</span>)</button>
+                <button data-filter="media" class="filter-btn px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium transition whitespace-nowrap">影音 (<span id="countMedia">0</span>)</button>
                 <button data-filter="code" class="filter-btn px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium transition whitespace-nowrap">文字/程式碼 (<span id="countCode">0</span>)</button>
                 <button data-filter="other" class="filter-btn px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 font-medium transition whitespace-nowrap">其他 (<span id="countOther">0</span>)</button>
             </div>
@@ -161,7 +163,7 @@
 
     <!-- Footer -->
     <footer class="border-t border-slate-800 py-6 text-center text-xs text-slate-500">
-        <p>雲端檔案寄託與跨裝置分享站 • 支援線上文件預覽與高速 QR Code 下載</p>
+        <p>雲端檔案寄託與跨裝置分享站 • 支援多類型線上文件預覽與高速 QR Code 下載</p>
     </footer>
 
     <!-- File Preview Modal -->
@@ -191,7 +193,7 @@
 
             <!-- Modal Body -->
             <div id="previewModalBody" class="p-6 overflow-y-auto flex-1 min-h-[300px] flex items-center justify-center bg-slate-950/40">
-                <!-- Dynamic preview contents (Code, Text, PDF, or Document details) -->
+                <!-- Dynamic preview contents (Image, Video, Audio, PDF, Code, Text, CSV, or Details) -->
             </div>
 
             <!-- Modal Footer -->
@@ -200,12 +202,12 @@
                     <i class="fa-solid fa-clock text-slate-500"></i>
                     <span id="previewModalTime">上傳時間：--</span>
                 </div>
-                <div class="flex items-center gap-2">
-                    <button id="btnModalShareQr" class="hover:text-emerald-400 flex items-center gap-1">
+                <div class="flex items-center gap-3">
+                    <button id="btnModalShareQr" class="hover:text-emerald-400 flex items-center gap-1 transition">
                         <i class="fa-solid fa-qrcode"></i> 顯示二維碼
                     </button>
                     <span>•</span>
-                    <button id="btnModalCopyLink" class="hover:text-emerald-400 flex items-center gap-1">
+                    <button id="btnModalCopyLink" class="hover:text-emerald-400 flex items-center gap-1 transition">
                         <i class="fa-solid fa-link"></i> 複製分享連結
                     </button>
                 </div>
@@ -280,9 +282,9 @@
             return new Promise((resolve, reject) => {
                 const request = indexedDB.open(IDB_NAME, 1);
                 request.onupgradeneeded = (e) => {
-                    const db = e.target.result;
-                    if (!db.objectStoreNames.contains(IDB_STORE)) {
-                        db.createObjectStore(IDB_STORE, { keyPath: 'id' });
+                    const database = e.target.result;
+                    if (!database.objectStoreNames.contains(IDB_STORE)) {
+                        database.createObjectStore(IDB_STORE, { keyPath: 'id' });
                     }
                 };
                 request.onsuccess = (e) => resolve(e.target.result);
@@ -291,25 +293,25 @@
         }
 
         async function saveFileToIDB(fileRecord) {
-            return new Promise(async (resolve, reject) => {
-                try {
-                    const db = await openIDB();
-                    const tx = db.transaction(IDB_STORE, 'readwrite');
+            try {
+                const database = await openIDB();
+                return new Promise((resolve, reject) => {
+                    const tx = database.transaction(IDB_STORE, 'readwrite');
                     const store = tx.objectStore(IDB_STORE);
                     const req = store.put(fileRecord);
                     req.onsuccess = () => resolve(true);
                     req.onerror = (e) => reject(e);
-                } catch (e) {
-                    reject(e);
-                }
-            });
+                });
+            } catch (e) {
+                console.error("IDB save error:", e);
+            }
         }
 
         async function getAllFilesFromIDB() {
             try {
-                const db = await openIDB();
+                const database = await openIDB();
                 return new Promise((resolve) => {
-                    const tx = db.transaction(IDB_STORE, 'readonly');
+                    const tx = database.transaction(IDB_STORE, 'readonly');
                     const request = tx.objectStore(IDB_STORE).getAll();
                     request.onsuccess = () => resolve(request.result || []);
                     request.onerror = () => resolve([]);
@@ -321,9 +323,9 @@
 
         async function getFileFromIDB(id) {
             try {
-                const db = await openIDB();
+                const database = await openIDB();
                 return new Promise((resolve) => {
-                    const tx = db.transaction(IDB_STORE, 'readonly');
+                    const tx = database.transaction(IDB_STORE, 'readonly');
                     const request = tx.objectStore(IDB_STORE).get(id);
                     request.onsuccess = () => resolve(request.result || null);
                     request.onerror = () => resolve(null);
@@ -335,8 +337,8 @@
 
         async function deleteFileFromIDB(id) {
             try {
-                const db = await openIDB();
-                const tx = db.transaction(IDB_STORE, 'readwrite');
+                const database = await openIDB();
+                const tx = database.transaction(IDB_STORE, 'readwrite');
                 tx.objectStore(IDB_STORE).delete(id);
             } catch (e) {}
         }
@@ -359,8 +361,9 @@
                 const publicFilesRef = collection(db, 'artifacts', appId, 'public', 'data', 'files');
                 onSnapshot(publicFilesRef, async (snapshot) => {
                     const cloudFiles = [];
-                    snapshot.forEach((doc) => {
-                        cloudFiles.push(doc.data());
+                    snapshot.forEach((docSnap) => {
+                        const data = docSnap.data();
+                        if (!data.deleted) cloudFiles.push(data);
                     });
                     
                     // Merge local IDB and Cloud files
@@ -368,9 +371,14 @@
                     const mergedMap = new Map();
 
                     localFiles.forEach(f => mergedMap.set(f.id, f));
-                    cloudFiles.forEach(f => mergedMap.set(f.id, f));
+                    cloudFiles.forEach(f => {
+                        // Prefer local object if dataUrl exists, else take cloud
+                        if (!mergedMap.has(f.id) || !mergedMap.get(f.id).dataUrl) {
+                            mergedMap.set(f.id, f);
+                        }
+                    });
 
-                    filesData = Array.from(mergedMap.values()).sort((a,b) => b.uploadedAt - a.uploadedAt);
+                    filesData = Array.from(mergedMap.values()).sort((a,b) => (b.uploadedAt || 0) - (a.uploadedAt || 0));
                     renderFiles();
                     checkUrlParamForFile();
                 }, (error) => {
@@ -411,23 +419,52 @@
         }
 
         function getFileCategory(fileName, fileType) {
-            const ext = fileName.split('.').pop().toLowerCase();
+            const ext = (fileName || '').split('.').pop().toLowerCase();
+            const mime = (fileType || '').toLowerCase();
+
+            const imgExts = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp', 'ico', 'avif'];
+            const mediaExts = ['mp3', 'wav', 'ogg', 'm4a', 'flac', 'aac', 'mp4', 'webm', 'ogv', 'mov'];
             const docExts = ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'odt', 'rtf'];
-            const codeExts = ['txt', 'md', 'json', 'js', 'html', 'css', 'py', 'csv', 'xml', 'log', 'sql', 'sh', 'c', 'cpp', 'java', 'ts'];
-            
-            if (docExts.includes(ext) || fileType.includes('pdf') || fileType.includes('document')) return 'document';
-            if (codeExts.includes(ext) || fileType.startsWith('text/')) return 'code';
+            const codeExts = ['txt', 'md', 'json', 'js', 'html', 'css', 'py', 'csv', 'xml', 'log', 'sql', 'sh', 'c', 'cpp', 'java', 'ts', 'jsx', 'tsx', 'php', 'yaml', 'yml'];
+
+            if (imgExts.includes(ext) || mime.startsWith('image/')) return 'image';
+            if (mediaExts.includes(ext) || mime.startsWith('audio/') || mime.startsWith('video/')) return 'media';
+            if (docExts.includes(ext) || mime.includes('pdf') || mime.includes('document') || mime.includes('sheet') || mime.includes('presentation')) return 'document';
+            if (codeExts.includes(ext) || mime.startsWith('text/')) return 'code';
             return 'other';
         }
 
         function getFileIconMeta(fileName, fileType) {
-            const ext = fileName.split('.').pop().toLowerCase();
-            if (ext === 'pdf') return { icon: 'fa-solid fa-file-pdf', color: 'text-red-400 bg-red-500/10' };
-            if (['doc', 'docx'].includes(ext)) return { icon: 'fa-solid fa-file-word', color: 'text-blue-400 bg-blue-500/10' };
-            if (['xls', 'xlsx'].includes(ext)) return { icon: 'fa-solid fa-file-excel', color: 'text-emerald-400 bg-emerald-500/10' };
-            if (['ppt', 'pptx'].includes(ext)) return { icon: 'fa-solid fa-file-powerpoint', color: 'text-orange-400 bg-orange-500/10' };
-            if (['txt', 'md', 'json', 'js', 'py', 'html', 'css'].includes(ext)) return { icon: 'fa-solid fa-file-code', color: 'text-teal-400 bg-teal-500/10' };
-            if (['zip', 'rar', '7z', 'tar', 'gz'].includes(ext)) return { icon: 'fa-solid fa-file-zipper', color: 'text-purple-400 bg-purple-500/10' };
+            const ext = (fileName || '').split('.').pop().toLowerCase();
+            const mime = (fileType || '').toLowerCase();
+
+            if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg', 'bmp'].includes(ext) || mime.startsWith('image/')) {
+                return { icon: 'fa-solid fa-file-image', color: 'text-emerald-400 bg-emerald-500/10' };
+            }
+            if (['mp3', 'wav', 'ogg', 'm4a', 'flac'].includes(ext) || mime.startsWith('audio/')) {
+                return { icon: 'fa-solid fa-file-audio', color: 'text-purple-400 bg-purple-500/10' };
+            }
+            if (['mp4', 'webm', 'mov', 'avi'].includes(ext) || mime.startsWith('video/')) {
+                return { icon: 'fa-solid fa-file-video', color: 'text-pink-400 bg-pink-500/10' };
+            }
+            if (ext === 'pdf' || mime.includes('pdf')) {
+                return { icon: 'fa-solid fa-file-pdf', color: 'text-red-400 bg-red-500/10' };
+            }
+            if (['doc', 'docx'].includes(ext)) {
+                return { icon: 'fa-solid fa-file-word', color: 'text-blue-400 bg-blue-500/10' };
+            }
+            if (['xls', 'xlsx', 'csv'].includes(ext)) {
+                return { icon: 'fa-solid fa-file-excel', color: 'text-emerald-400 bg-emerald-500/10' };
+            }
+            if (['ppt', 'pptx'].includes(ext)) {
+                return { icon: 'fa-solid fa-file-powerpoint', color: 'text-orange-400 bg-orange-500/10' };
+            }
+            if (['txt', 'md', 'json', 'js', 'py', 'html', 'css', 'ts'].includes(ext)) {
+                return { icon: 'fa-solid fa-file-code', color: 'text-cyan-400 bg-cyan-500/10' };
+            }
+            if (['zip', 'rar', '7z', 'tar', 'gz'].includes(ext)) {
+                return { icon: 'fa-solid fa-file-zipper', color: 'text-amber-400 bg-amber-500/10' };
+            }
             return { icon: 'fa-solid fa-file', color: 'text-slate-400 bg-slate-500/10' };
         }
 
@@ -444,7 +481,7 @@
             const emptyState = document.getElementById('emptyState');
 
             const filtered = filesData.filter(file => {
-                const matchesSearch = file.name.toLowerCase().includes(searchQuery.toLowerCase());
+                const matchesSearch = (file.name || '').toLowerCase().includes(searchQuery.toLowerCase());
                 const category = getFileCategory(file.name, file.type || '');
                 const matchesFilter = currentFilter === 'all' || category === currentFilter;
                 return matchesSearch && matchesFilter;
@@ -452,7 +489,9 @@
 
             // Update Counts
             document.getElementById('countAll').innerText = filesData.length;
+            document.getElementById('countImg').innerText = filesData.filter(f => getFileCategory(f.name, f.type||'')==='image').length;
             document.getElementById('countDocs').innerText = filesData.filter(f => getFileCategory(f.name, f.type||'')==='document').length;
+            document.getElementById('countMedia').innerText = filesData.filter(f => getFileCategory(f.name, f.type||'')==='media').length;
             document.getElementById('countCode').innerText = filesData.filter(f => getFileCategory(f.name, f.type||'')==='code').length;
             document.getElementById('countOther').innerText = filesData.filter(f => getFileCategory(f.name, f.type||'')==='other').length;
 
@@ -487,7 +526,7 @@
                             </div>
                         </div>
                         <h4 class="font-bold text-slate-200 text-sm truncate mb-1" title="${escapeHtml(file.name)}">${escapeHtml(file.name)}</h4>
-                        <p class="text-xs text-slate-400 mb-4">${formatBytes(file.size)} • ${new Date(file.uploadedAt).toLocaleDateString()}</p>
+                        <p class="text-xs text-slate-400 mb-4">${formatBytes(file.size)} • ${file.uploadedAt ? new Date(file.uploadedAt).toLocaleDateString() : '即時'}</p>
                     </div>
 
                     <div class="flex items-center gap-2 pt-3 border-t border-slate-700/50">
@@ -538,7 +577,7 @@
             }
 
             const totalFiles = filesList.length;
-            showToast(`正在處理 ${totalFiles} 個檔案，請稍候...`, 'info');
+            showToast(`正在讀取 ${totalFiles} 個檔案...`, 'info');
 
             try {
                 for (let i = 0; i < totalFiles; i++) {
@@ -565,12 +604,13 @@
                         await saveFileToIDB(fileRecord);
 
                         // Update local array & UI immediately
+                        filesData = filesData.filter(f => f.id !== fileRecord.id);
                         filesData.unshift(fileRecord);
                         renderFiles();
                         showToast(`「${file.name}」已成功寄託！`, 'success');
 
-                        // Sync to Cloud Firestore asynchronously in background (if size < 700KB)
-                        if (db && file.size < 700 * 1024) {
+                        // Sync to Cloud Firestore in background (for files < 750KB)
+                        if (db && file.size < 750 * 1024) {
                             (async () => {
                                 try {
                                     const cloudRef = doc(db, 'artifacts', appId, 'public', 'data', 'files', fileRecord.id);
@@ -615,33 +655,100 @@
             showToast('檔案已刪除', 'info');
         }
 
-        function triggerDownload(file) {
-            try {
-                const blob = dataUrlToBlob(file.dataUrl);
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url;
-                a.download = file.name;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                setTimeout(() => URL.revokeObjectURL(url), 1000);
-                showToast(`已開始下載「${file.name}」`, 'success');
-            } catch (e) {
-                showToast('下載失敗，請嘗試直接預覽複製', 'error');
-            }
-        }
-
         function dataUrlToBlob(dataUrl) {
-            const arr = dataUrl.split(',');
-            const mime = arr[0].match(/:(.*?);/)[1];
-            const bstr = atob(arr[1]);
-            let n = bstr.length;
-            const u8arr = new Uint8Array(n);
-            while (n--) {
-                u8arr[n] = bstr.charCodeAt(n);
+            if (!dataUrl || typeof dataUrl !== 'string') {
+                throw new Error('Data URL 不存在或無效');
+            }
+            const parts = dataUrl.split(',');
+            if (parts.length < 2) {
+                throw new Error('Data URL 格式不正確');
+            }
+
+            let mime = 'application/octet-stream';
+            const mimeMatch = parts[0].match(/:(.*?);/);
+            if (mimeMatch && mimeMatch[1]) {
+                mime = mimeMatch[1];
+            } else {
+                const simpleMime = parts[0].match(/:(.*)/);
+                if (simpleMime && simpleMime[1]) mime = simpleMime[1];
+            }
+
+            const isBase64 = parts[0].includes('base64');
+            let u8arr;
+
+            if (isBase64) {
+                // Remove whitespace/newlines from base64 string
+                const base64Str = parts[1].replace(/\s/g, '');
+                const bstr = atob(base64Str);
+                let n = bstr.length;
+                u8arr = new Uint8Array(n);
+                while (n--) {
+                    u8arr[n] = bstr.charCodeAt(n);
+                }
+            } else {
+                const decodedStr = decodeURIComponent(parts[1]);
+                const encoder = new TextEncoder();
+                u8arr = encoder.encode(decodedStr);
             }
             return new Blob([u8arr], { type: mime });
+        }
+
+        function triggerDownload(file) {
+            if (!file) {
+                showToast('無法取得檔案資訊', 'error');
+                return;
+            }
+
+            if (file.dataUrl) {
+                // Method 1: Blob URL download
+                try {
+                    const blob = dataUrlToBlob(file.dataUrl);
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = file.name || 'downloaded_file';
+                    a.style.display = 'none';
+                    document.body.appendChild(a);
+                    a.click();
+
+                    setTimeout(() => {
+                        if (document.body.contains(a)) document.body.removeChild(a);
+                        URL.revokeObjectURL(url);
+                    }, 3000);
+
+                    showToast(`已成功開始下載「${file.name}」`, 'success');
+                    return;
+                } catch (err) {
+                    console.warn('Blob download failed, trying direct link fallback:', err);
+                }
+
+                // Method 2: Direct Anchor dataUrl link fallback
+                try {
+                    const a = document.createElement('a');
+                    a.href = file.dataUrl;
+                    a.download = file.name || 'downloaded_file';
+                    a.target = '_blank';
+                    document.body.appendChild(a);
+                    a.click();
+                    setTimeout(() => { if (document.body.contains(a)) document.body.removeChild(a); }, 1000);
+                    showToast(`已開始下載「${file.name}」`, 'success');
+                    return;
+                } catch (err2) {
+                    console.warn('Direct download link failed, attempting new window opening:', err2);
+                }
+
+                // Method 3: Open in new window/tab
+                try {
+                    const win = window.open();
+                    if (win) {
+                        win.document.write(`<iframe src="${file.dataUrl}" frameborder="0" style="border:0; top:0px; left:0px; bottom:0px; right:0px; width:100%; height:100%;" allowfullscreen></iframe>`);
+                        showToast(`已於新分頁開啟「${file.name}」，您可以直接儲存`, 'info');
+                        return;
+                    }
+                } catch (err3) {}
+            }
+
+            showToast('該檔案缺乏數據內容或連結已失效', 'error');
         }
 
         async function openPreviewModal(file) {
@@ -653,44 +760,182 @@
             const body = document.getElementById('previewModalBody');
             const headerIcon = document.getElementById('previewHeaderIcon');
 
-            title.innerText = file.name;
+            title.innerText = file.name || '未命名檔案';
             subtitle.innerText = `${formatBytes(file.size)} • ${file.type || '通用格式'}`;
-            time.innerText = `上傳時間：${new Date(file.uploadedAt).toLocaleString('zh-TW')}`;
+            time.innerText = `上傳時間：${file.uploadedAt ? new Date(file.uploadedAt).toLocaleString('zh-TW') : '即時'}`;
 
             const iconMeta = getFileIconMeta(file.name, file.type || '');
             headerIcon.className = `w-10 h-10 rounded-xl ${iconMeta.color} flex items-center justify-center shrink-0`;
             headerIcon.innerHTML = `<i class="${iconMeta.icon} text-xl"></i>`;
 
             body.innerHTML = '';
-            const ext = file.name.split('.').pop().toLowerCase();
+            const ext = (file.name || '').split('.').pop().toLowerCase();
             const category = getFileCategory(file.name, file.type || '');
 
-            if (ext === 'pdf' || file.type === 'application/pdf') {
-                // PDF Viewer
+            if (!file.dataUrl) {
                 body.innerHTML = `
-                    <div class="w-full h-[65vh] rounded-2xl overflow-hidden border border-slate-800 bg-slate-900 flex flex-col">
-                        <iframe src="${file.dataUrl}" class="w-full h-full border-0"></iframe>
+                    <div class="text-center p-8 bg-slate-900 rounded-3xl border border-slate-800 max-w-md w-full shadow-xl">
+                        <div class="w-16 h-16 rounded-2xl bg-amber-500/10 text-amber-400 flex items-center justify-center mx-auto mb-4 text-3xl">
+                            <i class="fa-solid fa-triangle-exclamation"></i>
+                        </div>
+                        <h4 class="font-bold text-slate-100 mb-2">無法預覽雲端檔案內容</h4>
+                        <p class="text-xs text-slate-400 mb-6 leading-relaxed">此檔案可能僅保留記錄或超出免費雲端即時載入上限。</p>
+                        <button id="btnCardDownload" class="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-sm rounded-xl transition shadow-lg flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-download"></i>
+                            <span>嘗試觸發下載</span>
+                        </button>
                     </div>
                 `;
-            } else if (category === 'code') {
-                // Text & Code Viewer
-                const textContent = decodeDataUrlToText(file.dataUrl);
-                const lines = textContent.split('\n').length;
+                body.querySelector('#btnCardDownload')?.addEventListener('click', () => triggerDownload(file));
+                modal.classList.remove('hidden');
+                return;
+            }
+
+            // Category Specific Preview Renderers
+            if (category === 'image') {
+                // Image Preview
+                body.innerHTML = `
+                    <div class="flex flex-col items-center justify-center w-full gap-4">
+                        <div class="relative max-h-[60vh] overflow-auto rounded-2xl border border-slate-800 bg-slate-950/60 p-2 flex items-center justify-center w-full min-h-[220px]">
+                            <img src="${file.dataUrl}" alt="${escapeHtml(file.name)}" class="max-h-[55vh] w-auto max-w-full object-contain rounded-xl shadow-2xl transition-transform duration-200" id="previewImgElement" />
+                        </div>
+                        <div class="flex items-center gap-2 text-xs text-slate-400">
+                            <button id="btnZoomIn" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 rounded-xl transition"><i class="fa-solid fa-magnifying-glass-plus mr-1"></i> 放大</button>
+                            <button id="btnZoomOut" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 rounded-xl transition"><i class="fa-solid fa-magnifying-glass-minus mr-1"></i> 縮小</button>
+                            <button id="btnZoomReset" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 rounded-xl transition"><i class="fa-solid fa-rotate-left mr-1"></i> 重設</button>
+                        </div>
+                    </div>
+                `;
+                let scale = 1;
+                const img = body.querySelector('#previewImgElement');
+                body.querySelector('#btnZoomIn').addEventListener('click', () => { scale = Math.min(scale + 0.25, 3); img.style.transform = `scale(${scale})`; });
+                body.querySelector('#btnZoomOut').addEventListener('click', () => { scale = Math.max(scale - 0.25, 0.5); img.style.transform = `scale(${scale})`; });
+                body.querySelector('#btnZoomReset').addEventListener('click', () => { scale = 1; img.style.transform = `scale(1)`; });
+
+            } else if (category === 'media') {
+                // Audio & Video Preview
+                const isVideo = ['mp4', 'webm', 'ogv', 'mov'].includes(ext) || (file.type || '').startsWith('video/');
+                if (isVideo) {
+                    body.innerHTML = `
+                        <div class="w-full max-w-2xl flex flex-col items-center justify-center p-4 bg-slate-900 rounded-2xl border border-slate-800">
+                            <video controls class="w-full max-h-[55vh] rounded-xl shadow-xl bg-black" src="${file.dataUrl}"></video>
+                        </div>
+                    `;
+                } else {
+                    body.innerHTML = `
+                        <div class="w-full max-w-md text-center p-8 bg-slate-900 rounded-3xl border border-slate-800 shadow-xl">
+                            <div class="w-20 h-20 rounded-2xl bg-purple-500/10 text-purple-400 flex items-center justify-center mx-auto mb-6 text-3xl">
+                                <i class="fa-solid fa-music animate-pulse"></i>
+                            </div>
+                            <h4 class="font-bold text-slate-100 mb-4 truncate">${escapeHtml(file.name)}</h4>
+                            <audio controls class="w-full" src="${file.dataUrl}"></audio>
+                        </div>
+                    `;
+                }
+
+            } else if (ext === 'pdf' || (file.type || '').includes('pdf')) {
+                // PDF Viewer
                 body.innerHTML = `
                     <div class="w-full flex flex-col gap-3">
                         <div class="flex items-center justify-between text-xs text-slate-400 bg-slate-900/80 px-4 py-2.5 rounded-xl border border-slate-800">
-                            <span><i class="fa-solid fa-code text-emerald-400 mr-1.5"></i> UTF-8 文字預覽（總計 ${lines} 行）</span>
-                            <button id="btnCopyText" class="text-emerald-400 hover:text-emerald-300 font-semibold flex items-center gap-1">
-                                <i class="fa-solid fa-copy"></i> 複製全部文字
+                            <span><i class="fa-solid fa-file-pdf text-red-400 mr-1.5"></i> PDF 文件線上即時預覽</span>
+                            <button id="btnOpenPdfNewTab" class="text-emerald-400 hover:text-emerald-300 font-semibold flex items-center gap-1 transition">
+                                <i class="fa-solid fa-arrow-up-right-from-square"></i> 在新分頁開啟 PDF
                             </button>
                         </div>
-                        <pre class="w-full max-h-[55vh] p-4 bg-slate-950 text-emerald-300 rounded-2xl overflow-auto text-xs sm:text-sm font-mono border border-slate-800 leading-relaxed whitespace-pre-wrap break-words">${escapeHtml(textContent) || '（空白檔案或無法提取內容）'}</pre>
+                        <div class="w-full h-[60vh] rounded-2xl overflow-hidden border border-slate-800 bg-slate-950 flex flex-col relative">
+                            <iframe src="${file.dataUrl}" class="w-full h-full border-0"></iframe>
+                        </div>
                     </div>
                 `;
-                body.querySelector('#btnCopyText').addEventListener('click', () => {
+                body.querySelector('#btnOpenPdfNewTab').addEventListener('click', () => {
+                    const win = window.open();
+                    if (win) {
+                        win.document.write(`<iframe src="${file.dataUrl}" frameborder="0" style="border:0; top:0px; left:0px; bottom:0px; right:0px; width:100%; height:100%;" allowfullscreen></iframe>`);
+                    } else {
+                        showToast('請允許開啟快顯視窗以檢視 PDF', 'error');
+                    }
+                });
+
+            } else if (ext === 'csv') {
+                // CSV Table Preview
+                const textContent = decodeDataUrlToText(file.dataUrl);
+                const tableHtml = renderCsvTable(textContent);
+                body.innerHTML = `
+                    <div class="w-full flex flex-col gap-3">
+                        <div class="flex items-center justify-between text-xs text-slate-400 bg-slate-900/80 px-4 py-2.5 rounded-xl border border-slate-800">
+                            <span><i class="fa-solid fa-table text-emerald-400 mr-1.5"></i> CSV 數據表預覽</span>
+                            <button id="btnCopyCsv" class="text-emerald-400 hover:text-emerald-300 font-semibold flex items-center gap-1">
+                                <i class="fa-solid fa-copy"></i> 複製原始 CSV
+                            </button>
+                        </div>
+                        ${tableHtml}
+                    </div>
+                `;
+                body.querySelector('#btnCopyCsv').addEventListener('click', () => {
+                    copyToClipboard(textContent);
+                    showToast('已複製 CSV 內容！', 'success');
+                });
+
+            } else if (category === 'code' || ext === 'md' || ext === 'txt') {
+                // Text, Markdown & Code Viewer
+                const textContent = decodeDataUrlToText(file.dataUrl);
+                const lines = textContent.split('\n').length;
+
+                if (ext === 'md') {
+                    body.innerHTML = `
+                        <div class="w-full flex flex-col gap-3">
+                            <div class="flex items-center justify-between text-xs text-slate-400 bg-slate-900/80 px-4 py-2.5 rounded-xl border border-slate-800">
+                                <div class="flex items-center gap-2">
+                                    <button id="tabMdRendered" class="px-3 py-1 bg-emerald-600 text-white rounded-lg font-semibold">排版預覽</button>
+                                    <button id="tabMdRaw" class="px-3 py-1 bg-slate-800 text-slate-300 rounded-lg font-semibold hover:bg-slate-700">原始碼</button>
+                                </div>
+                                <button id="btnCopyText" class="text-emerald-400 hover:text-emerald-300 font-semibold flex items-center gap-1">
+                                    <i class="fa-solid fa-copy"></i> 複製全文
+                                </button>
+                            </div>
+                            <div id="mdRenderedBox" class="w-full max-h-[55vh] p-5 bg-slate-950 text-slate-200 rounded-2xl overflow-auto border border-slate-800 leading-relaxed text-sm">
+                                ${renderSimpleMarkdown(textContent)}
+                            </div>
+                            <pre id="mdRawBox" class="hidden w-full max-h-[55vh] p-4 bg-slate-950 text-emerald-300 rounded-2xl overflow-auto text-xs sm:text-sm font-mono border border-slate-800 leading-relaxed whitespace-pre-wrap break-words">${escapeHtml(textContent)}</pre>
+                        </div>
+                    `;
+                    const tabRendered = body.querySelector('#tabMdRendered');
+                    const tabRaw = body.querySelector('#tabMdRaw');
+                    const renderedBox = body.querySelector('#mdRenderedBox');
+                    const rawBox = body.querySelector('#mdRawBox');
+
+                    tabRendered.addEventListener('click', () => {
+                        tabRendered.className = "px-3 py-1 bg-emerald-600 text-white rounded-lg font-semibold";
+                        tabRaw.className = "px-3 py-1 bg-slate-800 text-slate-300 rounded-lg font-semibold hover:bg-slate-700";
+                        renderedBox.classList.remove('hidden');
+                        rawBox.classList.add('hidden');
+                    });
+                    tabRaw.addEventListener('click', () => {
+                        tabRaw.className = "px-3 py-1 bg-emerald-600 text-white rounded-lg font-semibold";
+                        tabRendered.className = "px-3 py-1 bg-slate-800 text-slate-300 rounded-lg font-semibold hover:bg-slate-700";
+                        rawBox.classList.remove('hidden');
+                        renderedBox.classList.add('hidden');
+                    });
+                } else {
+                    body.innerHTML = `
+                        <div class="w-full flex flex-col gap-3">
+                            <div class="flex items-center justify-between text-xs text-slate-400 bg-slate-900/80 px-4 py-2.5 rounded-xl border border-slate-800">
+                                <span><i class="fa-solid fa-code text-emerald-400 mr-1.5"></i> UTF-8 文字內容（總計 ${lines} 行）</span>
+                                <button id="btnCopyText" class="text-emerald-400 hover:text-emerald-300 font-semibold flex items-center gap-1">
+                                    <i class="fa-solid fa-copy"></i> 複製全文
+                                </button>
+                            </div>
+                            <pre class="w-full max-h-[55vh] p-4 bg-slate-950 text-emerald-300 rounded-2xl overflow-auto text-xs sm:text-sm font-mono border border-slate-800 leading-relaxed whitespace-pre-wrap break-words">${escapeHtml(textContent) || '（空白檔案或無內容）'}</pre>
+                        </div>
+                    `;
+                }
+
+                body.querySelector('#btnCopyText')?.addEventListener('click', () => {
                     copyToClipboard(textContent);
                     showToast('已複製全部文字內容！', 'success');
                 });
+
             } else {
                 // General File Metadata Card
                 body.innerHTML = `
@@ -714,17 +959,73 @@
         }
 
         function decodeDataUrlToText(dataUrl) {
+            if (!dataUrl) return "";
             try {
-                const base64 = dataUrl.split(',')[1];
-                const binary = atob(base64);
-                const bytes = new Uint8Array(binary.length);
-                for (let i = 0; i < binary.length; i++) {
-                    bytes[i] = binary.charCodeAt(i);
+                const parts = dataUrl.split(',');
+                if (parts.length < 2) return "";
+                const isBase64 = parts[0].includes('base64');
+                if (isBase64) {
+                    const base64Str = parts[1].replace(/\s/g, '');
+                    const binary = atob(base64Str);
+                    const bytes = new Uint8Array(binary.length);
+                    for (let i = 0; i < binary.length; i++) {
+                        bytes[i] = binary.charCodeAt(i);
+                    }
+                    return new TextDecoder('utf-8').decode(bytes);
+                } else {
+                    return decodeURIComponent(parts[1]);
                 }
-                return new TextDecoder('utf-8').decode(bytes);
             } catch (e) {
-                return "無法讀取該文字檔案。";
+                console.warn("Text decoding error:", e);
+                return "無法解析該文字內容，可能含有非 UTF-8 的二進位編碼。";
             }
+        }
+
+        function renderCsvTable(csvText) {
+            const lines = csvText.split(/\r?\n/).filter(line => line.trim().length > 0);
+            if (lines.length === 0) return '<p class="text-xs text-slate-400 text-center py-8">CSV 檔案為空白</p>';
+            
+            const rows = lines.map(line => line.split(','));
+            const header = rows[0];
+            const bodyRows = rows.slice(1, 100);
+
+            let html = `<div class="overflow-x-auto max-h-[50vh] rounded-2xl border border-slate-800"><table class="w-full text-left text-xs text-slate-300 border-collapse">`;
+            html += `<thead class="bg-slate-800 text-slate-200 sticky top-0"><tr>`;
+            header.forEach(h => {
+                html += `<th class="p-3 border-b border-slate-700 font-semibold truncate max-w-[180px]">${escapeHtml(h)}</th>`;
+            });
+            html += `</tr></thead><tbody>`;
+            bodyRows.forEach((r, idx) => {
+                const bg = idx % 2 === 0 ? 'bg-slate-900/40' : 'bg-slate-900/80';
+                html += `<tr class="${bg} hover:bg-slate-800/50">`;
+                r.forEach(cell => {
+                    html += `<td class="p-2.5 border-b border-slate-800/60 truncate max-w-[180px]">${escapeHtml(cell)}</td>`;
+                });
+                html += `</tr>`;
+            });
+            html += `</tbody></table></div>`;
+            if (rows.length > 101) {
+                html += `<p class="text-[11px] text-slate-500 mt-2 text-right">僅顯示前 100 筆資料，總計 ${rows.length - 1} 筆記錄</p>`;
+            }
+            return html;
+        }
+
+        function renderSimpleMarkdown(text) {
+            if (!text) return '';
+            let html = escapeHtml(text);
+            // Code block
+            html = html.replace(/```([\s\S]*?)```/g, '<pre class="bg-slate-900 p-3 rounded-xl font-mono text-emerald-400 text-xs my-2 overflow-x-auto">$1</pre>');
+            // Headers
+            html = html.replace(/^### (.*$)/gim, '<h3 class="text-base font-bold text-slate-100 my-2">$1</h3>');
+            html = html.replace(/^## (.*$)/gim, '<h2 class="text-lg font-bold text-slate-100 my-2">$1</h2>');
+            html = html.replace(/^# (.*$)/gim, '<h1 class="text-xl font-black text-emerald-400 my-3 pb-1 border-b border-slate-800">$1</h1>');
+            // Bold
+            html = html.replace(/\*\*(.*?)\*\*/g, '<strong class="text-emerald-300 font-bold">$1</strong>');
+            // Lists
+            html = html.replace(/^\s*[-*]\s+(.*$)/gim, '<li class="ml-4 list-disc text-slate-300">$1</li>');
+            // Newlines
+            html = html.replace(/\n/g, '<br>');
+            return html;
         }
 
         function escapeHtml(str) {
@@ -737,7 +1038,7 @@
             const fileName = document.getElementById('qrModalFileName');
             const container = document.getElementById('qrcodeContainer');
 
-            fileName.innerText = file.name;
+            fileName.innerText = file.name || '檔案分享';
             container.innerHTML = '';
 
             const shareUrl = `${window.location.origin}${window.location.pathname}?fileId=${file.id}`;
@@ -778,7 +1079,7 @@
                     a.click();
                     document.body.removeChild(a);
                     setTimeout(() => URL.revokeObjectURL(url), 1000);
-                    showToast('二維碼圖檔 (PNG) 已開始下載！', 'success');
+                    showToast('二維碼圖檔已開始下載！', 'success');
                 } catch(e) {
                     showToast('下載二維碼圖檔失敗', 'error');
                 }
@@ -807,7 +1108,7 @@
             if (sharedId) {
                 document.getElementById('sharedNoticeBanner').classList.remove('hidden');
 
-                // Try finding file in local IDB or cloud
+                // Try finding file in local memory or IDB or cloud
                 let targetFile = filesData.find(f => f.id === sharedId);
                 if (!targetFile) {
                     targetFile = await getFileFromIDB(sharedId);
@@ -824,9 +1125,9 @@
 
                 if (targetFile) {
                     openPreviewModal(targetFile);
-                    showToast(`已成功開啟分享檔案：${targetFile.name}`, 'success');
+                    showToast(`已開啟分享檔案：${targetFile.name}`, 'success');
                 } else {
-                    showToast('找不到對應的分享檔案，可能已被刪除', 'error');
+                    showToast('找不到對應的分享檔案，可能該檔案尚未同步至雲端', 'error');
                 }
             }
         }
