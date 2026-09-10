@@ -60,7 +60,6 @@
 
 <body class="bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 min-h-full flex flex-col transition-colors duration-200">
 
-    <!-- Top Navigation Header -->
     <header class="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 sticky top-0 z-30 shadow-sm">
         <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
             <div class="flex items-center gap-3">
@@ -89,7 +88,6 @@
         </div>
     </header>
 
-    <!-- Main Content Area -->
     <main class="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6">
         
         <!-- Upload Banner / Dropzone Area -->
@@ -119,9 +117,7 @@
             </div>
         </section>
 
-        <!-- Controls & Filter Toolbar -->
         <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
-            
             <!-- Category Tabs -->
             <div class="flex items-center gap-1 overflow-x-auto pb-1 sm:pb-0 scrollbar-none text-xs sm:text-sm">
                 <button data-category="all" class="cat-btn bg-blue-600 text-white px-3 py-1.5 rounded-lg font-medium whitespace-nowrap transition">全部檔案</button>
@@ -169,9 +165,9 @@
                 </div>
                 
                 <div class="flex items-center gap-2">
-                    <button id="btnPreviewDownload" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-medium transition flex items-center gap-1.5 shadow-sm">
+                    <button id="btnPreviewDownload" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold transition flex items-center gap-1.5 shadow-md">
                         <i class="fa-solid fa-download"></i>
-                        <span>下載</span>
+                        <span>立即下載此檔案</span>
                     </button>
                     <button id="btnClosePreview" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition">
                         <i class="fa-solid fa-xmark text-lg"></i>
@@ -186,17 +182,17 @@
         </div>
     </div>
 
-    <!-- 2. QR CODE & FILE SHARE MODAL (跨裝置分享與專屬下載視窗) -->
+    <!-- 2. QR CODE & FILE SHARE MODAL (跨裝置分享視窗) -->
     <div id="qrModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
         <div class="bg-white dark:bg-slate-800 rounded-2xl p-6 max-w-md w-full shadow-2xl border border-slate-200 dark:border-slate-700 text-center relative">
             <button id="btnCloseQr" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1">
                 <i class="fa-solid fa-xmark text-lg"></i>
             </button>
             <div class="w-10 h-10 bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-300 rounded-xl flex items-center justify-center mx-auto mb-3">
-                <i class="fa-solid fa-share-nodes text-lg"></i>
+                <i class="fa-solid fa-qrcode text-lg"></i>
             </div>
             <h3 id="qrModalTitle" class="font-bold text-base mb-1 truncate px-4">檔案名稱</h3>
-            <p class="text-xs text-slate-500 dark:text-slate-400 mb-4">電腦可複製專屬網址，手機可掃描 QR Code 開啟與下載</p>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mb-4">手機用相機掃描下方 QR Code，即可直接下載此檔案</p>
             
             <!-- QR Code Container -->
             <div class="bg-white p-4 rounded-xl inline-block border border-slate-200 shadow-inner mb-4">
@@ -205,7 +201,7 @@
 
             <!-- Copyable URL Input for Desktop/Mobile Users -->
             <div class="mb-4 text-left">
-                <label class="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">專屬下載網址（跨電腦/手機通用）：</label>
+                <label class="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">專屬下載網址（電腦/手機通用）：</label>
                 <div class="flex items-center gap-2">
                     <input type="text" id="shareUrlInput" readonly class="w-full bg-slate-100 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg px-3 py-2 text-xs text-slate-800 dark:text-slate-100 focus:outline-none font-mono">
                     <button id="btnCopyModalLink" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg text-xs font-medium transition whitespace-nowrap flex items-center gap-1 shrink-0">
@@ -220,7 +216,7 @@
                     <i class="fa-solid fa-eye"></i>
                     <span>線上預覽</span>
                 </button>
-                <button id="btnModalDirectDownload" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-medium transition flex items-center gap-1.5 shadow-sm">
+                <button id="btnModalDirectDownload" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold transition flex items-center gap-1.5 shadow-sm">
                     <i class="fa-solid fa-download"></i>
                     <span>立即下載</span>
                 </button>
@@ -538,8 +534,8 @@
                         <i class="${iconMeta.icon}"></i>
                     </div>
                     <h4 class="font-bold text-slate-800 dark:text-slate-100 mb-1 truncate">${escapeHtml(file.name)}</h4>
-                    <p class="text-xs text-slate-400 mb-4">此檔案類型不支援直接線上視覺預覽，但你可以隨時點擊下載此檔案。</p>
-                    <button class="btn-fallback-dl px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold shadow transition inline-flex items-center gap-2">
+                    <p class="text-xs text-slate-400 mb-4">點擊下方按鈕即可開始將此檔案下載至你的裝置。</p>
+                    <button class="btn-fallback-dl px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold shadow transition inline-flex items-center gap-2">
                         <i class="fa-solid fa-download"></i>
                         <span>立即下載此檔案</span>
                     </button>
@@ -557,7 +553,8 @@
             qrcodeCanvas.innerHTML = '';
 
             const baseUrl = window.location.origin + window.location.pathname;
-            const shareUrl = `${baseUrl}?fileId=${encodeURIComponent(file.id)}`;
+            // Add action=download parameter so scanned phone directly receives file download option
+            const shareUrl = `${baseUrl}?fileId=${encodeURIComponent(file.id)}&action=download`;
             shareUrlInput.value = shareUrl;
 
             new QRCode(qrcodeCanvas, {
@@ -576,22 +573,28 @@
             if (hasHandledUrlFile) return;
             const urlParams = new URLSearchParams(window.location.search);
             const targetFileId = urlParams.get('fileId');
+            const action = urlParams.get('action');
 
             if (targetFileId && localFiles.length > 0) {
                 const targetFile = localFiles.find(f => f.id === targetFileId);
                 if (targetFile) {
                     hasHandledUrlFile = true;
-                    showQrCodeModal(targetFile);
-                    showToast(`已成功開啟分享檔案：${targetFile.name}`, 'info');
+                    currentModalFile = targetFile;
+                    
+                    // Open Preview/Download Modal directly on mobile/target device
+                    openPreviewModal(targetFile);
+                    showToast(`已成功獲取分享檔案：${targetFile.name}`, 'success');
+
+                    // If user came through QR Code download action, trigger direct download automatically
+                    if (action === 'download') {
+                        setTimeout(() => {
+                            triggerDownload(targetFile);
+                        }, 500);
+                    }
+                } else {
+                    showToast('找不到該分享檔案，可能已被原作者刪除', 'error');
                 }
             }
-        }
-
-        function copyShareLink(file) {
-            const baseUrl = window.location.origin + window.location.pathname;
-            const shareUrl = `${baseUrl}?fileId=${encodeURIComponent(file.id)}`;
-            copyToClipboard(shareUrl);
-            showToast('已複製專屬下載網址！電腦或手機開啟即可直接下載與預覽', 'success');
         }
 
         function copyToClipboard(text) {
@@ -663,7 +666,7 @@
                             <button data-id="${file.id}" class="btn-qr p-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-300 rounded-lg transition" title="手機掃碼/分享連結 (QR Code)">
                                 <i class="fa-solid fa-qrcode"></i>
                             </button>
-                            <button data-id="${file.id}" class="btn-download px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition flex items-center gap-1.5 shadow-sm">
+                            <button data-id="${file.id}" class="btn-download px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-medium transition flex items-center gap-1.5 shadow-sm">
                                 <i class="fa-solid fa-download"></i>
                                 <span>下載</span>
                             </button>
@@ -691,7 +694,7 @@
                 saveToLocalStorage();
             }
 
-            // Create Blob URL for universal multi-device compatibility (Safari, Chrome, Mobile)
+            // Universal Blob URL Download Strategy
             try {
                 const blob = dataUrlToBlob(file.dataUrl);
                 const blobUrl = URL.createObjectURL(blob);
@@ -705,17 +708,18 @@
                 setTimeout(() => {
                     document.body.removeChild(a);
                     URL.revokeObjectURL(blobUrl);
-                }, 100);
+                }, 200);
 
-                showToast(`已開始下載：${file.name}`, 'info');
+                showToast(`已開始下載檔案：${file.name}`, 'success');
             } catch (e) {
-                // Fallback to Data URL direct link
+                // Direct Data URL fallback
                 const a = document.createElement('a');
                 a.href = file.dataUrl;
                 a.download = file.name;
                 document.body.appendChild(a);
                 a.click();
                 document.body.removeChild(a);
+                showToast(`已開始下載檔案：${file.name}`, 'success');
             }
 
             renderFiles();
