@@ -121,6 +121,12 @@
                 <button data-theme="dark" class="theme-btn w-6 h-6 rounded-full bg-gray-900 border border-gray-600 shadow-sm focus:ring-2 focus:ring-indigo-500" title="暗黑主題"></button>
             </div>
 
+            <!-- 離開預覽按鈕 (載入書籍後顯示) -->
+            <button id="exit-btn" class="hidden bg-rose-50 hover:bg-rose-100 dark:bg-rose-900/30 dark:hover:bg-rose-900/50 text-rose-600 dark:text-rose-300 border border-rose-200 dark:border-rose-800 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition flex items-center space-x-1.5 shadow-sm" title="離開預覽並返回首頁">
+                <i class="fa-solid fa-right-from-bracket"></i>
+                <span class="hidden sm:inline">離開預覽</span>
+            </button>
+
             <!-- 開啟本機檔案 -->
             <label class="cursor-pointer bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium transition flex items-center space-x-1.5 shadow">
                 <i class="fa-solid fa-folder-open"></i>
@@ -201,6 +207,12 @@
         </div>
     </div>
 
+    <!-- 訊息提示 Toast 通知 -->
+    <div id="toast" class="fixed bottom-16 right-4 z-50 bg-gray-900/90 text-white px-4 py-3 rounded-xl shadow-2xl backdrop-blur-md flex items-center space-x-2 border border-gray-700 transition-all duration-300 transform translate-y-10 opacity-0 hidden">
+        <i class="fa-solid fa-circle-exclamation text-amber-400 text-lg"></i>
+        <span id="toast-msg" class="text-xs sm:text-sm font-medium">系統通知</span>
+    </div>
+
     <!-- 底部閱讀進度條與資訊 -->
     <footer class="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 px-4 py-2.5 flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 z-20">
         <div class="flex items-center space-x-2 w-full max-w-xl mx-auto">
@@ -228,6 +240,7 @@
                 
                 this.dom = {
                     fileInput: document.getElementById('file-input'),
+                    exitBtn: document.getElementById('exit-btn'),
                     loadSampleBtn: document.getElementById('load-sample-btn'),
                     uploadOverlay: document.getElementById('upload-overlay'),
                     viewer: document.getElementById('viewer'),
@@ -254,7 +267,9 @@
                     pageInfo: document.getElementById('page-info'),
                     imageModal: document.getElementById('image-modal'),
                     modalImg: document.getElementById('modal-img'),
-                    closeModal: document.getElementById('close-modal')
+                    closeModal: document.getElementById('close-modal'),
+                    toast: document.getElementById('toast'),
+                    toastMsg: document.getElementById('toast-msg')
                 };
 
                 this.initEvents();
@@ -269,6 +284,10 @@
                 this.dom.loadSampleBtn.addEventListener('click', () => {
                     this.loadMultiLanguageSampleEpub();
                 });
+
+                if (this.dom.exitBtn) {
+                    this.dom.exitBtn.addEventListener('click', () => this.closeBook());
+                }
 
                 // 拖曳上傳
                 window.addEventListener('dragover', (e) => e.preventDefault());
@@ -329,6 +348,79 @@
                         this.closeImageModal();
                     }
                 });
+            }
+
+            /**
+             * 載入並初始化 EPUB 檔案
+             */
+            async loadBook(fileOrArrayBuffer) {
+                try {
+                    // 隱藏歡迎/上傳遮罩，顯示離開預覽按鈕
+                    this.dom.uploadOverlay.classList.add('hidden');
+                    if (this.dom.exitBtn) this.dom.exitBtn.classList.remove('hidden');
+
+                    // 若已有舊書籍，先釋放資源
+                    if (this.rendition) {
+                        try { this.rendition.destroy(); } catch(e){}
+                        this.rendition = null;
+                    }
+                    if (this.book) {
+                        try { this.book.destroy(); } catch(e){}
+                        this.book = null;
+                    }
+                    this.dom.viewer.innerHTML = '';
+
+                    let arrayBuffer;
+                    if (fileOrArrayBuffer instanceof File || fileOrArrayBuffer instanceof Blob) {
+                        arrayBuffer = await fileOrArrayBuffer.arrayBuffer();
+                    } else {
+                        arrayBuffer = fileOrArrayBuffer;
+                    }
+
+                    this.renderEpub(arrayBuffer);
+                } catch (error) {
+                    console.error("載入 EPUB 失敗:", error);
+                    this.showToast("無法載入此 EPUB 檔案，請確認檔案格式是否正確。");
+                    this.closeBook();
+                }
+            }
+
+            /**
+             * 離開預覽並清理系統狀態
+             */
+            closeBook() {
+                if (this.rendition) {
+                    try { this.rendition.destroy(); } catch(e){}
+                    this.rendition = null;
+                }
+                if (this.book) {
+                    try { this.book.destroy(); } catch(e){}
+                    this.book = null;
+                }
+                this.dom.viewer.innerHTML = '';
+                this.dom.bookTitle.textContent = 'EPUB 閱讀器 (中日英/高畫質圖片)';
+                this.dom.bookAuthor.textContent = '請載入檔案或使用範例書';
+                this.dom.tocList.innerHTML = '<p class="text-gray-400 text-center py-8">未載入目錄</p>';
+                this.dom.progressSlider.value = 0;
+                this.dom.currLocation.textContent = '0%';
+                this.dom.pageInfo.textContent = '頁碼準備中...';
+                if (this.dom.fileInput) this.dom.fileInput.value = '';
+                if (this.dom.exitBtn) this.dom.exitBtn.classList.add('hidden');
+                this.dom.uploadOverlay.classList.remove('hidden');
+                this.toggleToc(false);
+            }
+
+            /**
+             * 顯示非阻塞 Toast 訊息
+             */
+            showToast(message) {
+                if (!this.dom.toast) return;
+                this.dom.toastMsg.textContent = message;
+                this.dom.toast.classList.remove('hidden', 'translate-y-10', 'opacity-0');
+                setTimeout(() => {
+                    this.dom.toast.classList.add('translate-y-10', 'opacity-0');
+                    setTimeout(() => this.dom.toast.classList.add('hidden'), 300);
+                }, 3500);
             }
 
             renderEpub(arrayBuffer) {
