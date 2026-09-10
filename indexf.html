@@ -90,7 +90,7 @@
 
     <main class="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6">
         
-        <!-- Upload Banner / Dropzone Area -->
+        <!-- Upload Dropzone Area -->
         <section id="uploadSection" class="bg-white dark:bg-slate-800 border-2 border-dashed border-slate-300 dark:border-slate-700 hover:border-blue-500 dark:hover:border-blue-400 rounded-2xl p-6 sm:p-10 text-center transition duration-200 cursor-pointer shadow-sm relative overflow-hidden group">
             <input type="file" id="fileInput" class="hidden" multiple>
             
@@ -99,7 +99,7 @@
                     <i class="fa-solid fa-cloud-arrow-up"></i>
                 </div>
                 <h2 class="text-lg font-bold mb-1">點擊或拖放檔案至此處上傳</h2>
-                <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mb-4">支援圖片、PDF、DOCX、影片音訊、TXT 文字檔等，免登入無限制</p>
+                <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mb-4">支援 PDF、DOCX、TXT、代碼、壓縮檔等，免登入無限制</p>
                 
                 <div class="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 dark:bg-slate-700/60 text-blue-700 dark:text-blue-300 rounded-lg text-xs font-semibold">
                     <i class="fa-solid fa-eye"></i>
@@ -118,16 +118,13 @@
         </section>
 
         <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
-            <!-- Category Tabs -->
             <div class="flex items-center gap-1 overflow-x-auto pb-1 sm:pb-0 scrollbar-none text-xs sm:text-sm">
                 <button data-category="all" class="cat-btn bg-blue-600 text-white px-3 py-1.5 rounded-lg font-medium whitespace-nowrap transition">全部檔案</button>
-                <button data-category="doc" class="cat-btn text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 px-3 py-1.5 rounded-lg font-medium whitespace-nowrap transition">文件 / PDF</button>
-                <button data-category="image" class="cat-btn text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 px-3 py-1.5 rounded-lg font-medium whitespace-nowrap transition">圖片</button>
-                <button data-category="media" class="cat-btn text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 px-3 py-1.5 rounded-lg font-medium whitespace-nowrap transition">影音播放</button>
-                <button data-category="archive" class="cat-btn text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 px-3 py-1.5 rounded-lg font-medium whitespace-nowrap transition">壓縮檔</button>
+                <button data-category="doc" class="cat-btn text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 px-3 py-1.5 rounded-lg font-medium whitespace-nowrap transition">文件 / PDF / 報表</button>
+                <button data-category="text" class="cat-btn text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 px-3 py-1.5 rounded-lg font-medium whitespace-nowrap transition">文字 / 程式碼</button>
+                <button data-category="archive" class="cat-btn text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 px-3 py-1.5 rounded-lg font-medium whitespace-nowrap transition">壓縮檔 / 其他</button>
             </div>
 
-            <!-- Search Box -->
             <div class="relative flex-1 sm:max-w-xs">
                 <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
                 <input type="text" id="searchInput" placeholder="搜尋檔名..." class="w-full bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 pl-9 pr-3 py-1.5 rounded-lg text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-800 dark:text-slate-100">
@@ -148,11 +145,9 @@
 
     </main>
 
-    <!-- 1. FILE PREVIEW MODAL (全功能預覽視窗) -->
     <div id="previewModal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-50 flex items-center justify-center p-4 hidden">
         <div class="bg-white dark:bg-slate-800 rounded-2xl max-w-4xl w-full max-h-[90vh] shadow-2xl border border-slate-200 dark:border-slate-700 flex flex-col overflow-hidden">
             
-            <!-- Preview Modal Header -->
             <div class="px-5 py-4 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between bg-slate-50/50 dark:bg-slate-800/50">
                 <div class="flex items-center gap-3 min-w-0">
                     <div id="previewHeaderIcon" class="w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-300 flex items-center justify-center shrink-0">
@@ -175,14 +170,11 @@
                 </div>
             </div>
 
-            <!-- Preview Content Body -->
             <div id="previewModalBody" class="p-6 overflow-y-auto flex-1 flex items-center justify-center min-h-[300px] bg-slate-100/50 dark:bg-slate-900/50">
-                <!-- Dynamic Content (Image / Video / Audio / PDF / Text / Fallback Card) rendered via JS -->
             </div>
         </div>
     </div>
 
-    <!-- 2. QR CODE & FILE SHARE MODAL (跨裝置分享視窗) -->
     <div id="qrModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
         <div class="bg-white dark:bg-slate-800 rounded-2xl p-6 max-w-md w-full shadow-2xl border border-slate-200 dark:border-slate-700 text-center relative">
             <button id="btnCloseQr" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1">
@@ -192,14 +184,19 @@
                 <i class="fa-solid fa-qrcode text-lg"></i>
             </div>
             <h3 id="qrModalTitle" class="font-bold text-base mb-1 truncate px-4">檔案名稱</h3>
-            <p class="text-xs text-slate-500 dark:text-slate-400 mb-4">手機用相機掃描下方 QR Code，即可直接下載此檔案</p>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mb-3">手機用相機掃描下方 QR Code，即可直接預覽與下載此檔案</p>
             
-            <!-- QR Code Container -->
-            <div class="bg-white p-4 rounded-xl inline-block border border-slate-200 shadow-inner mb-4">
+            <div class="bg-white p-4 rounded-xl inline-block border border-slate-200 shadow-inner mb-3">
                 <div id="qrcodeCanvas"></div>
             </div>
 
-            <!-- Copyable URL Input for Desktop/Mobile Users -->
+            <div class="mb-4 flex justify-center">
+                <button id="btnDownloadQrImg" class="px-3 py-1.5 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 rounded-lg text-xs font-medium transition flex items-center gap-1.5 border border-slate-200 dark:border-slate-600">
+                    <i class="fa-solid fa-file-image text-blue-500"></i>
+                    <span>下載二維碼圖檔 (PNG)</span>
+                </button>
+            </div>
+
             <div class="mb-4 text-left">
                 <label class="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">專屬下載網址（電腦/手機通用）：</label>
                 <div class="flex items-center gap-2">
@@ -214,17 +211,17 @@
             <div class="flex items-center justify-between pt-3 border-t border-slate-100 dark:border-slate-700">
                 <button id="btnModalPreview" class="px-3.5 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 rounded-lg text-xs font-medium transition flex items-center gap-1.5">
                     <i class="fa-solid fa-eye"></i>
-                    <span>線上預覽</span>
+                    <span>線上預覽內容</span>
                 </button>
                 <button id="btnModalDirectDownload" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold transition flex items-center gap-1.5 shadow-sm">
                     <i class="fa-solid fa-download"></i>
-                    <span>立即下載</span>
+                    <span>立即下載檔案</span>
                 </button>
             </div>
         </div>
     </div>
 
-    <!-- Notification Toast -->
+    <!-- Toast Component -->
     <div id="toast" class="fixed bottom-5 right-5 bg-slate-800 text-white text-xs sm:text-sm px-4 py-3 rounded-xl shadow-xl opacity-0 transition-opacity duration-300 pointer-events-none z-50 flex items-center gap-2.5">
         <i id="toastIcon" class="fa-solid fa-circle-info text-blue-400"></i>
         <span id="toastMsg">提示訊息</span>
@@ -241,7 +238,6 @@
         let auth = null;
         let currentUser = null;
 
-        // Local In-Memory Store
         let localFiles = [];
         let activeCategory = 'all';
         let searchQuery = '';
@@ -264,6 +260,7 @@
         const btnCopyModalLink = document.getElementById('btnCopyModalLink');
         const btnModalDirectDownload = document.getElementById('btnModalDirectDownload');
         const btnModalPreview = document.getElementById('btnModalPreview');
+        const btnDownloadQrImg = document.getElementById('btnDownloadQrImg');
 
         // Preview Modal Elements
         const previewModal = document.getElementById('previewModal');
@@ -278,6 +275,462 @@
         const uploadProgressContainer = document.getElementById('uploadProgressContainer');
         const progressBar = document.getElementById('progressBar');
         const uploadStatusText = document.getElementById('uploadStatusText');
+
+        function renderFiles() {
+            if (!fileListGrid) return;
+            fileListGrid.innerHTML = '';
+            
+            const filteredFiles = localFiles.filter(file => {
+                const matchesCategory = activeCategory === 'all' || file.category === activeCategory;
+                const matchesSearch = !searchQuery || file.name.toLowerCase().includes(searchQuery);
+                return matchesCategory && matchesSearch;
+            });
+
+            if (filteredFiles.length === 0) {
+                if (emptyState) emptyState.classList.remove('hidden');
+                return;
+            }
+
+            if (emptyState) emptyState.classList.add('hidden');
+
+            filteredFiles.forEach(file => {
+                const iconMeta = getFileIcon(file.name, file.type || '');
+                const card = document.createElement('div');
+                card.className = 'bg-white dark:bg-slate-800 rounded-2xl p-5 border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md transition file-card-hover flex flex-col justify-between gap-4';
+                
+                card.innerHTML = `
+                    <div class="flex items-start gap-3">
+                        <div class="w-12 h-12 rounded-xl ${iconMeta.bgColor} ${iconMeta.textColor} flex items-center justify-center shrink-0 text-xl font-bold">
+                            <i class="${iconMeta.icon}"></i>
+                        </div>
+                        <div class="min-w-0 flex-1">
+                            <h3 class="font-semibold text-slate-800 dark:text-slate-100 text-sm truncate" title="${escapeHtml(file.name)}">${escapeHtml(file.name)}</h3>
+                            <p class="text-xs text-slate-400 mt-0.5">${formatBytes(file.size)} • ${new Date(file.uploadedAt || Date.now()).toLocaleDateString('zh-TW')}</p>
+                        </div>
+                        <button class="btn-delete text-slate-400 hover:text-red-500 p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition" title="刪除檔案">
+                            <i class="fa-solid fa-trash-can text-sm"></i>
+                        </button>
+                    </div>
+
+                    <div class="flex items-center justify-between pt-3 border-t border-slate-100 dark:border-slate-700/60 gap-2 text-xs">
+                        <button class="btn-preview bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 px-3 py-1.5 rounded-lg font-medium transition flex items-center gap-1.5 flex-1 justify-center">
+                            <i class="fa-solid fa-eye"></i>
+                            <span>預覽</span>
+                        </button>
+                        <button class="btn-share bg-blue-50 dark:bg-slate-700 hover:bg-blue-100 dark:hover:bg-slate-600 text-blue-600 dark:text-blue-300 px-3 py-1.5 rounded-lg font-medium transition flex items-center gap-1.5 flex-1 justify-center">
+                            <i class="fa-solid fa-qrcode"></i>
+                            <span>二維碼/連結</span>
+                        </button>
+                        <button class="btn-download bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg font-medium transition flex items-center gap-1.5 flex-1 justify-center shadow-sm">
+                            <i class="fa-solid fa-download"></i>
+                            <span>下載</span>
+                        </button>
+                    </div>
+                `;
+
+                card.querySelector('.btn-delete').addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    if (confirm(`確定要刪除「${file.name}」嗎？`)) {
+                        deleteFile(file.id);
+                    }
+                });
+
+                card.querySelector('.btn-preview').addEventListener('click', () => {
+                    openPreviewModal(file);
+                });
+
+                card.querySelector('.btn-share').addEventListener('click', () => {
+                    openShareModal(file);
+                });
+
+                card.querySelector('.btn-download').addEventListener('click', () => {
+                    triggerDownload(file);
+                });
+
+                fileListGrid.appendChild(card);
+            });
+        }
+
+        function checkUrlForFileShare() {
+            if (hasHandledUrlFile) return;
+            const urlParams = new URLSearchParams(window.location.search);
+            const fileId = urlParams.get('fileId');
+            const action = urlParams.get('action');
+
+            if (!fileId) return;
+
+            const targetFile = localFiles.find(f => f.id === fileId);
+            if (targetFile) {
+                hasHandledUrlFile = true;
+                if (action === 'download') {
+                    triggerDownload(targetFile);
+                }
+                openPreviewModal(targetFile);
+                showToast(`已為您開啟分享檔案：「${targetFile.name}」`, 'success');
+            }
+        }
+
+        function openShareModal(file) {
+            currentModalFile = file;
+            document.getElementById('qrModalTitle').innerText = file.name;
+            qrcodeCanvas.innerHTML = '';
+            
+            const baseUrl = window.location.href.split('?')[0];
+            const shareUrl = `${baseUrl}?fileId=${encodeURIComponent(file.id)}&action=download`;
+            shareUrlInput.value = shareUrl;
+            
+            if (typeof QRCode !== 'undefined') {
+                new QRCode(qrcodeCanvas, {
+                    text: shareUrl,
+                    width: 160,
+                    height: 160,
+                    colorDark: "#1e293b",
+                    colorLight: "#ffffff",
+                    correctLevel: QRCode.CorrectLevel.M
+                });
+            }
+
+            qrModal.classList.remove('hidden');
+        }
+
+        function openPreviewModal(file) {
+            currentModalFile = file;
+            previewModalTitle.innerText = file.name;
+            previewModalSubtitle.innerText = `${formatBytes(file.size)} • ${file.type || '通用格式'}`;
+            
+            const iconMeta = getFileIcon(file.name, file.type || '');
+            previewHeaderIcon.className = `w-8 h-8 rounded-lg ${iconMeta.bgColor} ${iconMeta.textColor} flex items-center justify-center shrink-0`;
+            previewHeaderIcon.innerHTML = `<i class="${iconMeta.icon}"></i>`;
+
+            previewModalBody.innerHTML = '';
+            const ext = file.name.split('.').pop().toLowerCase();
+            const textExtensions = ['txt', 'json', 'js', 'html', 'css', 'py', 'md', 'csv', 'xml', 'log', 'sql', 'sh', 'c', 'cpp', 'java', 'ts'];
+            const isTextType = textExtensions.includes(ext) || (file.type && file.type.startsWith('text/'));
+
+            if (isTextType) {
+                const rawText = decodeDataUrlToText(file.dataUrl);
+                const textContainer = document.createElement('div');
+                textContainer.className = 'w-full flex flex-col gap-3';
+                
+                textContainer.innerHTML = `
+                    <div class="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-800 px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-700">
+                        <span><i class="fa-solid fa-file-lines mr-1"></i> 純文字/程式碼內容預覽</span>
+                        <button id="btnCopyTextContent" class="text-blue-600 hover:text-blue-700 dark:text-blue-400 font-medium flex items-center gap-1">
+                            <i class="fa-solid fa-copy"></i> 複製全部文字
+                        </button>
+                    </div>
+                    <pre class="w-full max-h-[60vh] p-4 bg-slate-900 text-emerald-400 rounded-xl overflow-auto text-xs sm:text-sm font-mono border border-slate-700 shadow-inner leading-relaxed select-text whitespace-pre-wrap break-words">${escapeHtml(rawText) || '（空白檔案或無法讀取文字內容）'}</pre>
+                `;
+
+                textContainer.querySelector('#btnCopyTextContent').addEventListener('click', () => {
+                    copyToClipboard(rawText);
+                    showToast('已複製預覽文字內容！', 'success');
+                });
+
+                previewModalBody.appendChild(textContainer);
+            } else {
+                const fileCard = document.createElement('div');
+                fileCard.className = 'text-center p-8 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 max-w-md w-full shadow-md';
+                fileCard.innerHTML = `
+                    <div class="w-20 h-20 ${iconMeta.bgColor} ${iconMeta.textColor} rounded-2xl flex items-center justify-center mx-auto mb-4 text-4xl shadow-inner">
+                        <i class="${iconMeta.icon}"></i>
+                    </div>
+                    <h4 class="font-bold text-lg text-slate-800 dark:text-slate-100 mb-1 truncate px-2" title="${escapeHtml(file.name)}">${escapeHtml(file.name)}</h4>
+                    <p class="text-xs text-slate-400 mb-6">${formatBytes(file.size)} • ${file.type || '二進制檔案'}</p>
+                    
+                    <div class="bg-slate-50 dark:bg-slate-700/50 p-3 rounded-xl border border-slate-100 dark:border-slate-700 text-xs text-slate-500 dark:text-slate-300 mb-6 text-left space-y-1 font-mono">
+                        <div><span class="text-slate-400">上傳時間：</span>${new Date(file.uploadedAt || Date.now()).toLocaleString('zh-TW')}</div>
+                        <div><span class="text-slate-400">下載次數：</span>${file.downloads || 0} 次</div>
+                        <div><span class="text-slate-400">檔案狀態：</span><span class="text-green-500 font-semibold">就緒（隨時可下載）</span></div>
+                    </div>
+
+                    <button class="btn-card-dl w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-semibold shadow-md transition flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-download"></i>
+                        <span>立即下載此檔案到裝置</span>
+                    </button>
+                `;
+                fileCard.querySelector('.btn-card-dl').addEventListener('click', () => triggerDownload(file));
+                previewModalBody.appendChild(fileCard);
+            }
+
+            previewModal.classList.remove('hidden');
+        }
+
+        async function handleFilesUpload(filesList) {
+            if (!filesList || filesList.length === 0) return;
+
+            uploadProgressContainer.classList.remove('hidden');
+            progressBar.style.width = '20%';
+            uploadStatusText.innerText = '正在讀取檔案內容...';
+
+            const total = filesList.length;
+            let completed = 0;
+
+            for (const file of filesList) {
+                try {
+                    uploadStatusText.innerText = `正在處理 (${completed + 1}/${total}): ${file.name}`;
+                    const dataUrl = await readFileAsDataUrl(file);
+                    const fileCategory = detectCategory(file.name, file.type || '');
+
+                    const fileDoc = {
+                        name: file.name,
+                        size: file.size,
+                        type: file.type || 'application/octet-stream',
+                        category: fileCategory,
+                        dataUrl: dataUrl,
+                        uploadedAt: Date.now(),
+                        downloads: 0
+                    };
+
+                    if (db) {
+                        const filesColRef = collection(db, 'artifacts', appId, 'public', 'data', 'shared_files');
+                        await addDoc(filesColRef, fileDoc);
+                    } else {
+                        fileDoc.id = 'file_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
+                        localFiles.unshift(fileDoc);
+                        saveToLocalStorage();
+                        renderFiles();
+                    }
+
+                    completed++;
+                    progressBar.style.width = `${Math.round((completed / total) * 100)}%`;
+                } catch (err) {
+                    console.error('File upload failed:', err);
+                    showToast(`檔案「${file.name}」讀取失敗`, 'error');
+                }
+            }
+
+            uploadProgressContainer.classList.add('hidden');
+            fileInput.value = '';
+            showToast(`成功上傳 ${completed} 個檔案！`, 'success');
+        }
+
+        async function deleteFile(fileId) {
+            try {
+                if (db) {
+                    const fileDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'shared_files', fileId);
+                    await deleteDoc(fileDocRef);
+                } else {
+                    localFiles = localFiles.filter(f => f.id !== fileId);
+                    saveToLocalStorage();
+                    renderFiles();
+                }
+                showToast('檔案已成功刪除', 'info');
+            } catch (err) {
+                console.error('Error deleting file:', err);
+                showToast('刪除失敗，請稍後再試', 'error');
+            }
+        }
+
+        async function triggerDownload(file) {
+            if (!file || !file.dataUrl) {
+                showToast('無法存取檔案數據', 'error');
+                return;
+            }
+
+            try {
+                const blob = dataUrlToBlob(file.dataUrl);
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = file.name;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+
+                file.downloads = (file.downloads || 0) + 1;
+                if (db && file.id) {
+                    try {
+                        const fileDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'shared_files', file.id);
+                        await updateDoc(fileDocRef, { downloads: file.downloads });
+                    } catch (e) {
+                        console.warn('Could not update download count:', e);
+                    }
+                }
+                showToast(`開始下載：「${file.name}」`, 'success');
+            } catch (e) {
+                console.error('Download trigger error:', e);
+                showToast('下載失敗，請嘗試手動複製連結', 'error');
+            }
+        }
+
+        function copyToClipboard(text) {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text).catch(() => fallbackCopyText(text));
+            } else {
+                fallbackCopyText(text);
+            }
+        }
+
+        function fallbackCopyText(text) {
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            textarea.style.position = 'fixed';
+            textarea.style.opacity = '0';
+            document.body.appendChild(textarea);
+            textarea.focus();
+            textarea.select();
+            try {
+                document.execCommand('copy');
+            } catch (err) {
+                console.warn('Copy command failed:', err);
+            }
+            document.body.removeChild(textarea);
+        }
+
+        function downloadQrCodeImage() {
+            if (!qrcodeCanvas) return;
+            const canvas = qrcodeCanvas.querySelector('canvas');
+            const img = qrcodeCanvas.querySelector('img');
+            let dataUrl = null;
+
+            if (canvas) {
+                dataUrl = canvas.toDataURL('image/png');
+            } else if (img && img.src) {
+                dataUrl = img.src;
+            }
+
+            if (dataUrl) {
+                const a = document.createElement('a');
+                a.href = dataUrl;
+                a.download = `QRCode_${currentModalFile ? currentModalFile.name.replace(/\.[^/.]+$/, "") : 'file'}.png`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                showToast('二維碼圖片已成功下載！', 'success');
+            } else {
+                showToast('二維碼尚未生成，請稍後再試', 'error');
+            }
+        }
+
+        function decodeDataUrlToText(dataUrl) {
+            try {
+                const parts = dataUrl.split(',');
+                if (parts.length < 2) return '';
+                const base64Str = parts[1];
+                const binaryString = atob(base64Str);
+                const bytes = new Uint8Array(binaryString.length);
+                for (let i = 0; i < binaryString.length; i++) {
+                    bytes[i] = binaryString.charCodeAt(i);
+                }
+                return new TextDecoder('utf-8').decode(bytes);
+            } catch (e) {
+                console.warn('Text decoding error:', e);
+                return '';
+            }
+        }
+
+        function detectCategory(fileName, mimeType) {
+            const ext = fileName.split('.').pop().toLowerCase();
+            if (['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'csv'].includes(ext)) {
+                return 'doc';
+            }
+            if (['txt', 'json', 'js', 'html', 'css', 'py', 'md', 'xml', 'log', 'sql'].includes(ext) || mimeType.startsWith('text/')) {
+                return 'text';
+            }
+            if (['zip', 'rar', '7z', 'tar', 'gz'].includes(ext)) {
+                return 'archive';
+            }
+            return 'all';
+        }
+
+        function getFileIcon(fileName, mimeType) {
+            const ext = fileName.split('.').pop().toLowerCase();
+            if (['pdf'].includes(ext)) {
+                return { icon: 'fa-solid fa-file-pdf', bgColor: 'bg-red-50 dark:bg-red-950/40', textColor: 'text-red-600 dark:text-red-400' };
+            }
+            if (['doc', 'docx'].includes(ext)) {
+                return { icon: 'fa-solid fa-file-word', bgColor: 'bg-blue-50 dark:bg-blue-950/40', textColor: 'text-blue-600 dark:text-blue-400' };
+            }
+            if (['xls', 'xlsx', 'csv'].includes(ext)) {
+                return { icon: 'fa-solid fa-file-excel', bgColor: 'bg-green-50 dark:bg-green-950/40', textColor: 'text-green-600 dark:text-green-400' };
+            }
+            if (['ppt', 'pptx'].includes(ext)) {
+                return { icon: 'fa-solid fa-file-powerpoint', bgColor: 'bg-orange-50 dark:bg-orange-950/40', textColor: 'text-orange-600 dark:text-orange-400' };
+            }
+            if (['zip', 'rar', '7z', 'tar', 'gz'].includes(ext)) {
+                return { icon: 'fa-solid fa-file-zipper', bgColor: 'bg-slate-100 dark:bg-slate-700', textColor: 'text-slate-600 dark:text-slate-300' };
+            }
+            if (['txt', 'json', 'js', 'html', 'css', 'py', 'md'].includes(ext)) {
+                return { icon: 'fa-solid fa-file-code', bgColor: 'bg-indigo-50 dark:bg-indigo-950/40', textColor: 'text-indigo-600 dark:text-indigo-400' };
+            }
+            return { icon: 'fa-solid fa-file', bgColor: 'bg-slate-100 dark:bg-slate-700', textColor: 'text-slate-500 dark:text-slate-400' };
+        }
+
+        function readFileAsDataUrl(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = (err) => reject(err);
+                reader.readAsDataURL(file);
+            });
+        }
+
+        function dataUrlToBlob(dataUrl) {
+            const arr = dataUrl.split(',');
+            const mime = arr[0].match(/:(.*?);/)[1];
+            const bstr = atob(arr[1]);
+            let n = bstr.length;
+            const u8arr = new Uint8Array(n);
+            while (n--) {
+                u8arr[n] = bstr.charCodeAt(n);
+            }
+            return new Blob([u8arr], { type: mime });
+        }
+
+        function formatBytes(bytes, decimals = 2) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const dm = decimals < 0 ? 0 : decimals;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+        }
+
+        function escapeHtml(str) {
+            return String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+        }
+
+        function showToast(message, type = 'info') {
+            const toast = document.getElementById('toast');
+            const toastMsg = document.getElementById('toastMsg');
+            const toastIcon = document.getElementById('toastIcon');
+
+            if (!toast || !toastMsg || !toastIcon) return;
+
+            toastMsg.innerText = message;
+            if (type === 'success') {
+                toastIcon.className = 'fa-solid fa-circle-check text-green-400';
+            } else if (type === 'error') {
+                toastIcon.className = 'fa-solid fa-circle-exclamation text-red-400';
+            } else {
+                toastIcon.className = 'fa-solid fa-circle-info text-blue-400';
+            }
+
+            toast.classList.remove('opacity-0', 'pointer-events-none');
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'pointer-events-none');
+            }, 3000);
+        }
+
+        function saveToLocalStorage() {
+            try {
+                localStorage.setItem('shared_files_local', JSON.stringify(localFiles));
+            } catch (e) {
+                console.warn('LocalStorage limit reached');
+            }
+        }
+
+        function loadFromLocalStorage() {
+            try {
+                const stored = localStorage.getItem('shared_files_local');
+                if (stored) {
+                    localFiles = JSON.parse(stored);
+                    renderFiles();
+                }
+            } catch (e) {}
+        }
 
         async function initCloudEngine() {
             try {
@@ -325,26 +778,27 @@
         }
 
         function setupEventListeners() {
-            // Dark mode toggle
-            document.getElementById('btnThemeToggle').addEventListener('click', () => {
+            document.getElementById('btnThemeToggle')?.addEventListener('click', () => {
                 const isDark = document.documentElement.classList.toggle('dark');
-                document.getElementById('themeIcon').className = isDark ? 'fa-solid fa-sun text-yellow-400' : 'fa-solid fa-moon';
+                const themeIcon = document.getElementById('themeIcon');
+                if (themeIcon) {
+                    themeIcon.className = isDark ? 'fa-solid fa-sun text-yellow-400' : 'fa-solid fa-moon';
+                }
             });
 
-            // Upload triggers
-            uploadSection.addEventListener('click', () => fileInput.click());
-            btnNewUpload.addEventListener('click', () => fileInput.click());
+            uploadSection?.addEventListener('click', () => fileInput.click());
+            btnNewUpload?.addEventListener('click', () => fileInput.click());
 
-            uploadSection.addEventListener('dragover', (e) => {
+            uploadSection?.addEventListener('dragover', (e) => {
                 e.preventDefault();
                 uploadSection.classList.add('border-blue-500', 'bg-blue-50/50', 'dark:bg-slate-700/50');
             });
 
-            uploadSection.addEventListener('dragleave', () => {
+            uploadSection?.addEventListener('dragleave', () => {
                 uploadSection.classList.remove('border-blue-500', 'bg-blue-50/50', 'dark:bg-slate-700/50');
             });
 
-            uploadSection.addEventListener('drop', (e) => {
+            uploadSection?.addEventListener('drop', (e) => {
                 e.preventDefault();
                 uploadSection.classList.remove('border-blue-500', 'bg-blue-50/50', 'dark:bg-slate-700/50');
                 if (e.dataTransfer.files.length > 0) {
@@ -352,13 +806,12 @@
                 }
             });
 
-            fileInput.addEventListener('change', (e) => {
+            fileInput?.addEventListener('change', (e) => {
                 if (e.target.files.length > 0) {
                     handleFilesUpload(e.target.files);
                 }
             });
 
-            // Category filter tabs
             document.querySelectorAll('.cat-btn').forEach(btn => {
                 btn.addEventListener('click', () => {
                     document.querySelectorAll('.cat-btn').forEach(b => {
@@ -370,510 +823,50 @@
                 });
             });
 
-            // Search filter
-            searchInput.addEventListener('input', (e) => {
+            searchInput?.addEventListener('input', (e) => {
                 searchQuery = e.target.value.trim().toLowerCase();
                 renderFiles();
             });
 
-            // Share Modal actions
-            btnCloseQr.addEventListener('click', () => qrModal.classList.add('hidden'));
-            qrModal.addEventListener('click', (e) => {
+            btnCloseQr?.addEventListener('click', () => qrModal.classList.add('hidden'));
+            qrModal?.addEventListener('click', (e) => {
                 if (e.target === qrModal) qrModal.classList.add('hidden');
             });
 
-            btnCopyModalLink.addEventListener('click', () => {
+            btnDownloadQrImg?.addEventListener('click', downloadQrCodeImage);
+
+            btnCopyModalLink?.addEventListener('click', () => {
                 if (shareUrlInput.value) {
                     copyToClipboard(shareUrlInput.value);
                     showToast('已複製專屬下載網址！可以直接發給電腦或手機好友', 'success');
                 }
             });
 
-            btnModalDirectDownload.addEventListener('click', () => {
+            btnModalDirectDownload?.addEventListener('click', () => {
                 if (currentModalFile) {
                     triggerDownload(currentModalFile);
                 }
             });
 
-            btnModalPreview.addEventListener('click', () => {
+            btnModalPreview?.addEventListener('click', () => {
                 if (currentModalFile) {
                     qrModal.classList.add('hidden');
                     openPreviewModal(currentModalFile);
                 }
             });
 
-            // Preview Modal actions
-            btnClosePreview.addEventListener('click', () => previewModal.classList.add('hidden'));
-            previewModal.addEventListener('click', (e) => {
+            btnClosePreview?.addEventListener('click', () => previewModal.classList.add('hidden'));
+            previewModal?.addEventListener('click', (e) => {
                 if (e.target === previewModal) previewModal.classList.add('hidden');
             });
 
-            btnPreviewDownload.addEventListener('click', () => {
+            btnPreviewDownload?.addEventListener('click', () => {
                 if (currentModalFile) {
                     triggerDownload(currentModalFile);
                 }
             });
         }
 
-        async function handleFilesUpload(filesList) {
-            uploadProgressContainer.classList.remove('hidden');
-            const totalFiles = filesList.length;
-            let lastUploadedFile = null;
-
-            for (let i = 0; i < totalFiles; i++) {
-                const file = filesList[i];
-                uploadStatusText.innerText = `正在處理 (${i + 1}/${totalFiles}): ${file.name}`;
-                progressBar.style.width = `${((i + 1) / totalFiles) * 100}%`;
-
-                try {
-                    const dataUrl = await readFileAsDataUrl(file);
-                    const category = detectCategory(file.name, file.type);
-                    
-                    const newFileRecord = {
-                        name: file.name,
-                        size: file.size,
-                        type: file.type || 'application/octet-stream',
-                        category: category,
-                        uploadedAt: Date.now(),
-                        downloads: 0,
-                        dataUrl: dataUrl
-                    };
-
-                    if (db) {
-                        const filesColRef = collection(db, 'artifacts', appId, 'public', 'data', 'shared_files');
-                        const docRef = await addDoc(filesColRef, newFileRecord);
-                        newFileRecord.id = docRef.id;
-                    } else {
-                        newFileRecord.id = 'local_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
-                        localFiles.unshift(newFileRecord);
-                        saveToLocalStorage();
-                    }
-                    lastUploadedFile = newFileRecord;
-                } catch (err) {
-                    showToast(`檔案 ${file.name} 上傳失敗: ` + err.message, 'error');
-                }
-            }
-
-            setTimeout(() => {
-                uploadProgressContainer.classList.add('hidden');
-                progressBar.style.width = '0%';
-                fileInput.value = '';
-                showToast('檔案上傳成功！所有人均可開放預覽與下載。', 'success');
-                if (!db) renderFiles();
-
-                if (lastUploadedFile) {
-                    showQrCodeModal(lastUploadedFile);
-                }
-            }, 400);
-        }
-
-        function openPreviewModal(file) {
-            currentModalFile = file;
-            previewModalTitle.innerText = file.name;
-            previewModalSubtitle.innerText = `${formatBytes(file.size)} • ${file.type || '未知格式'}`;
-            
-            const iconMeta = getFileIcon(file.name, file.type);
-            previewHeaderIcon.className = `w-8 h-8 rounded-lg ${iconMeta.bgColor} ${iconMeta.textColor} flex items-center justify-center shrink-0`;
-            previewHeaderIcon.innerHTML = `<i class="${iconMeta.icon}"></i>`;
-
-            previewModalBody.innerHTML = '';
-            const category = detectCategory(file.name, file.type);
-            const ext = file.name.split('.').pop().toLowerCase();
-
-            // 1. IMAGE PREVIEW
-            if (category === 'image' || file.type.startsWith('image/')) {
-                const img = document.createElement('img');
-                img.src = file.dataUrl;
-                img.alt = file.name;
-                img.className = 'max-h-[70vh] max-w-full object-contain rounded-xl shadow-md border border-slate-200 dark:border-slate-700';
-                previewModalBody.appendChild(img);
-            } 
-            // 2. VIDEO PREVIEW
-            else if (['mp4', 'webm', 'mov', 'mkv', 'ogg'].includes(ext) || file.type.startsWith('video/')) {
-                const video = document.createElement('video');
-                video.src = file.dataUrl;
-                video.controls = true;
-                video.autoplay = false;
-                video.className = 'max-h-[70vh] w-full max-w-3xl rounded-xl shadow-md';
-                previewModalBody.appendChild(video);
-            }
-            // 3. AUDIO PREVIEW
-            else if (['mp3', 'wav', 'ogg', 'm4a', 'flac'].includes(ext) || file.type.startsWith('audio/')) {
-                const audioContainer = document.createElement('div');
-                audioContainer.className = 'bg-white dark:bg-slate-800 p-8 rounded-2xl border border-slate-200 dark:border-slate-700 max-w-md w-full text-center shadow-md';
-                audioContainer.innerHTML = `
-                    <div class="w-20 h-20 bg-amber-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl">
-                        <i class="fa-solid fa-music"></i>
-                    </div>
-                    <h4 class="font-bold text-base text-slate-800 dark:text-slate-100 mb-2 truncate">${escapeHtml(file.name)}</h4>
-                    <audio controls src="${file.dataUrl}" class="w-full mt-4"></audio>
-                `;
-                previewModalBody.appendChild(audioContainer);
-            }
-            // 4. PDF PREVIEW
-            else if (ext === 'pdf' || file.type === 'application/pdf') {
-                const iframe = document.createElement('iframe');
-                iframe.src = file.dataUrl;
-                iframe.className = 'w-full h-[70vh] rounded-xl border border-slate-200 dark:border-slate-700 shadow-inner bg-white';
-                previewModalBody.appendChild(iframe);
-            }
-            // 5. TEXT / CODE PREVIEW
-            else if (['txt', 'json', 'js', 'html', 'css', 'py', 'md', 'csv', 'xml', 'log'].includes(ext) || file.type.startsWith('text/')) {
-                const rawText = decodeDataUrlToText(file.dataUrl);
-                const pre = document.createElement('pre');
-                pre.className = 'w-full max-h-[65vh] p-4 bg-slate-900 text-emerald-400 rounded-xl overflow-auto text-xs sm:text-sm font-mono border border-slate-700 shadow-inner leading-relaxed select-text';
-                pre.innerText = rawText || '（空白檔案或無法解碼文字內容）';
-                previewModalBody.appendChild(pre);
-            }
-            // 6. GENERIC FALLBACK FOR OTHER FILE TYPES
-            else {
-                const fallbackCard = document.createElement('div');
-                fallbackCard.className = 'text-center p-8 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 max-w-sm shadow-sm';
-                fallbackCard.innerHTML = `
-                    <div class="w-16 h-16 ${iconMeta.bgColor} ${iconMeta.textColor} rounded-2xl flex items-center justify-center mx-auto mb-3 text-3xl">
-                        <i class="${iconMeta.icon}"></i>
-                    </div>
-                    <h4 class="font-bold text-slate-800 dark:text-slate-100 mb-1 truncate">${escapeHtml(file.name)}</h4>
-                    <p class="text-xs text-slate-400 mb-4">點擊下方按鈕即可開始將此檔案下載至你的裝置。</p>
-                    <button class="btn-fallback-dl px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold shadow transition inline-flex items-center gap-2">
-                        <i class="fa-solid fa-download"></i>
-                        <span>立即下載此檔案</span>
-                    </button>
-                `;
-                fallbackCard.querySelector('.btn-fallback-dl').addEventListener('click', () => triggerDownload(file));
-                previewModalBody.appendChild(fallbackCard);
-            }
-
-            previewModal.classList.remove('hidden');
-        }
-
-        function showQrCodeModal(file) {
-            currentModalFile = file;
-            document.getElementById('qrModalTitle').innerText = file.name;
-            qrcodeCanvas.innerHTML = '';
-
-            const baseUrl = window.location.origin + window.location.pathname;
-            // Add action=download parameter so scanned phone directly receives file download option
-            const shareUrl = `${baseUrl}?fileId=${encodeURIComponent(file.id)}&action=download`;
-            shareUrlInput.value = shareUrl;
-
-            new QRCode(qrcodeCanvas, {
-                text: shareUrl,
-                width: 170,
-                height: 170,
-                colorDark: "#0f172a",
-                colorLight: "#ffffff",
-                correctLevel: QRCode.CorrectLevel.H
-            });
-
-            qrModal.classList.remove('hidden');
-        }
-
-        function checkUrlForFileShare() {
-            if (hasHandledUrlFile) return;
-            const urlParams = new URLSearchParams(window.location.search);
-            const targetFileId = urlParams.get('fileId');
-            const action = urlParams.get('action');
-
-            if (targetFileId && localFiles.length > 0) {
-                const targetFile = localFiles.find(f => f.id === targetFileId);
-                if (targetFile) {
-                    hasHandledUrlFile = true;
-                    currentModalFile = targetFile;
-                    
-                    // Open Preview/Download Modal directly on mobile/target device
-                    openPreviewModal(targetFile);
-                    showToast(`已成功獲取分享檔案：${targetFile.name}`, 'success');
-
-                    // If user came through QR Code download action, trigger direct download automatically
-                    if (action === 'download') {
-                        setTimeout(() => {
-                            triggerDownload(targetFile);
-                        }, 500);
-                    }
-                } else {
-                    showToast('找不到該分享檔案，可能已被原作者刪除', 'error');
-                }
-            }
-        }
-
-        function copyToClipboard(text) {
-            const tempInput = document.createElement('textarea');
-            tempInput.value = text;
-            document.body.appendChild(tempInput);
-            tempInput.select();
-            document.execCommand('copy');
-            document.body.removeChild(tempInput);
-        }
-
-        function renderFiles() {
-            if (!fileListGrid) return;
-            fileListGrid.innerHTML = '';
-
-            let filtered = localFiles.filter(file => {
-                const matchCategory = activeCategory === 'all' || file.category === activeCategory;
-                const matchSearch = !searchQuery || file.name.toLowerCase().includes(searchQuery);
-                return matchCategory && matchSearch;
-            });
-
-            if (filtered.length === 0) {
-                if (emptyState) emptyState.classList.remove('hidden');
-                return;
-            } else {
-                if (emptyState) emptyState.classList.add('hidden');
-            }
-
-            filtered.forEach(file => {
-                const card = document.createElement('div');
-                card.className = 'bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-4 file-card-hover flex flex-col justify-between shadow-sm hover:shadow-md';
-
-                const iconMeta = getFileIcon(file.name, file.type);
-                const formattedSize = formatBytes(file.size);
-                const formattedDate = new Date(file.uploadedAt).toLocaleString('zh-TW', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' });
-
-                card.innerHTML = `
-                    <div>
-                        <div class="flex items-start justify-between gap-3 mb-3">
-                            <div class="flex items-center gap-3 min-w-0">
-                                <div class="w-12 h-12 ${iconMeta.bgColor} ${iconMeta.textColor} rounded-xl flex items-center justify-center shrink-0 text-xl shadow-inner">
-                                    <i class="${iconMeta.icon}"></i>
-                                </div>
-                                <div class="min-w-0">
-                                    <h4 class="font-bold text-sm text-slate-800 dark:text-slate-100 truncate cursor-pointer hover:text-blue-600 transition btn-title-preview" title="點擊預覽 ${escapeHtml(file.name)}">${escapeHtml(file.name)}</h4>
-                                    <div class="text-xs text-slate-400 mt-0.5 flex items-center gap-2">
-                                        <span>${formattedSize}</span>
-                                        <span>•</span>
-                                        <span>${formattedDate}</span>
-                                    </div>
-                                </div>
-                            </div>
-                            <button data-id="${file.id}" class="btn-delete text-slate-300 hover:text-red-500 p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition" title="刪除檔案">
-                                <i class="fa-solid fa-trash-can text-sm"></i>
-                            </button>
-                        </div>
-                    </div>
-
-                    <div class="pt-3 border-t border-slate-100 dark:border-slate-700/60 flex items-center justify-between gap-2 text-xs">
-                        <div class="text-slate-400 flex items-center gap-1">
-                            <i class="fa-solid fa-download text-[10px]"></i>
-                            <span>${file.downloads || 0} 次下載</span>
-                        </div>
-
-                        <div class="flex items-center gap-1.5">
-                            <button data-id="${file.id}" class="btn-preview p-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-300 rounded-lg transition" title="線上預覽檔案">
-                                <i class="fa-solid fa-eye"></i>
-                            </button>
-                            <button data-id="${file.id}" class="btn-qr p-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-300 rounded-lg transition" title="手機掃碼/分享連結 (QR Code)">
-                                <i class="fa-solid fa-qrcode"></i>
-                            </button>
-                            <button data-id="${file.id}" class="btn-download px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-medium transition flex items-center gap-1.5 shadow-sm">
-                                <i class="fa-solid fa-download"></i>
-                                <span>下載</span>
-                            </button>
-                        </div>
-                    </div>
-                `;
-
-                card.querySelector('.btn-title-preview').addEventListener('click', () => openPreviewModal(file));
-                card.querySelector('.btn-preview').addEventListener('click', () => openPreviewModal(file));
-                card.querySelector('.btn-download').addEventListener('click', () => triggerDownload(file));
-                card.querySelector('.btn-qr').addEventListener('click', () => showQrCodeModal(file));
-                card.querySelector('.btn-delete').addEventListener('click', () => deleteFileRecord(file));
-
-                fileListGrid.appendChild(card);
-            });
-        }
-
-        function triggerDownload(file) {
-            file.downloads = (file.downloads || 0) + 1;
-            
-            if (db && file.id && !file.id.startsWith('local_')) {
-                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'shared_files', file.id);
-                updateDoc(docRef, { downloads: file.downloads }).catch(() => {});
-            } else {
-                saveToLocalStorage();
-            }
-
-            // Universal Blob URL Download Strategy
-            try {
-                const blob = dataUrlToBlob(file.dataUrl);
-                const blobUrl = URL.createObjectURL(blob);
-
-                const a = document.createElement('a');
-                a.href = blobUrl;
-                a.download = file.name;
-                document.body.appendChild(a);
-                a.click();
-                
-                setTimeout(() => {
-                    document.body.removeChild(a);
-                    URL.revokeObjectURL(blobUrl);
-                }, 200);
-
-                showToast(`已開始下載檔案：${file.name}`, 'success');
-            } catch (e) {
-                // Direct Data URL fallback
-                const a = document.createElement('a');
-                a.href = file.dataUrl;
-                a.download = file.name;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                showToast(`已開始下載檔案：${file.name}`, 'success');
-            }
-
-            renderFiles();
-        }
-
-        async function deleteFileRecord(file) {
-            if (db && file.id && !file.id.startsWith('local_')) {
-                try {
-                    const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'shared_files', file.id);
-                    await deleteDoc(docRef);
-                    showToast('檔案已成功刪除', 'info');
-                } catch (e) {
-                    showToast('刪除失敗: ' + e.message, 'error');
-                }
-            } else {
-                localFiles = localFiles.filter(f => f.id !== file.id);
-                saveToLocalStorage();
-                renderFiles();
-                showToast('檔案已刪除', 'info');
-            }
-        }
-
-        function detectCategory(fileName, mimeType) {
-            const ext = fileName.split('.').pop().toLowerCase();
-            if (['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'bmp'].includes(ext) || mimeType.startsWith('image/')) {
-                return 'image';
-            }
-            if (['pdf', 'doc', 'docx', 'txt', 'xls', 'xlsx', 'ppt', 'pptx', 'csv', 'md', 'json'].includes(ext)) {
-                return 'doc';
-            }
-            if (['mp3', 'wav', 'mp4', 'mkv', 'mov', 'avi', 'ogg', 'webm', 'flac'].includes(ext) || mimeType.startsWith('video/') || mimeType.startsWith('audio/')) {
-                return 'media';
-            }
-            if (['zip', 'rar', '7z', 'tar', 'gz'].includes(ext)) {
-                return 'archive';
-            }
-            return 'all';
-        }
-
-        function getFileIcon(fileName, mimeType) {
-            const ext = fileName.split('.').pop().toLowerCase();
-            
-            if (['pdf'].includes(ext)) {
-                return { icon: 'fa-solid fa-file-pdf', bgColor: 'bg-red-50 dark:bg-red-950/40', textColor: 'text-red-600 dark:text-red-400' };
-            }
-            if (['doc', 'docx'].includes(ext)) {
-                return { icon: 'fa-solid fa-file-word', bgColor: 'bg-blue-50 dark:bg-blue-950/40', textColor: 'text-blue-600 dark:text-blue-400' };
-            }
-            if (['xls', 'xlsx', 'csv'].includes(ext)) {
-                return { icon: 'fa-solid fa-file-excel', bgColor: 'bg-green-50 dark:bg-green-950/40', textColor: 'text-green-600 dark:text-green-400' };
-            }
-            if (['ppt', 'pptx'].includes(ext)) {
-                return { icon: 'fa-solid fa-file-powerpoint', bgColor: 'bg-orange-50 dark:bg-orange-950/40', textColor: 'text-orange-600 dark:text-orange-400' };
-            }
-            if (['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg'].includes(ext) || mimeType.startsWith('image/')) {
-                return { icon: 'fa-solid fa-file-image', bgColor: 'bg-purple-50 dark:bg-purple-950/40', textColor: 'text-purple-600 dark:text-purple-400' };
-            }
-            if (['mp3', 'wav', 'ogg', 'flac'].includes(ext) || mimeType.startsWith('audio/')) {
-                return { icon: 'fa-solid fa-file-audio', bgColor: 'bg-amber-50 dark:bg-amber-950/40', textColor: 'text-amber-600 dark:text-amber-400' };
-            }
-            if (['mp4', 'mkv', 'mov', 'avi', 'webm'].includes(ext) || mimeType.startsWith('video/')) {
-                return { icon: 'fa-solid fa-file-video', bgColor: 'bg-rose-50 dark:bg-rose-950/40', textColor: 'text-rose-600 dark:text-rose-400' };
-            }
-            if (['zip', 'rar', '7z', 'tar', 'gz'].includes(ext)) {
-                return { icon: 'fa-solid fa-file-zipper', bgColor: 'bg-slate-100 dark:bg-slate-700', textColor: 'text-slate-600 dark:text-slate-300' };
-            }
-            if (['txt', 'json', 'js', 'html', 'css', 'py', 'md'].includes(ext)) {
-                return { icon: 'fa-solid fa-file-code', bgColor: 'bg-indigo-50 dark:bg-indigo-950/40', textColor: 'text-indigo-600 dark:text-indigo-400' };
-            }
-            return { icon: 'fa-solid fa-file', bgColor: 'bg-slate-100 dark:bg-slate-700', textColor: 'text-slate-500 dark:text-slate-400' };
-        }
-
-        function readFileAsDataUrl(file) {
-            return new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onload = () => resolve(reader.result);
-                reader.onerror = (err) => reject(err);
-                reader.readAsDataURL(file);
-            });
-        }
-
-        function dataUrlToBlob(dataUrl) {
-            const arr = dataUrl.split(',');
-            const mime = arr[0].match(/:(.*?);/)[1];
-            const bstr = atob(arr[1]);
-            let n = bstr.length;
-            const u8arr = new Uint8Array(n);
-            while (n--) {
-                u8arr[n] = bstr.charCodeAt(n);
-            }
-            return new Blob([u8arr], { type: mime });
-        }
-
-        function decodeDataUrlToText(dataUrl) {
-            try {
-                const base64Str = dataUrl.split(',')[1];
-                return decodeURIComponent(escape(atob(base64Str)));
-            } catch (e) {
-                return '';
-            }
-        }
-
-        function formatBytes(bytes, decimals = 2) {
-            if (bytes === 0) return '0 Bytes';
-            const k = 1024;
-            const dm = decimals < 0 ? 0 : decimals;
-            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-            const i = Math.floor(Math.log(bytes) / Math.log(k));
-            return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
-        }
-
-        function escapeHtml(str) {
-            return String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-        }
-
-        function showToast(message, type = 'info') {
-            const toast = document.getElementById('toast');
-            const toastMsg = document.getElementById('toastMsg');
-            const toastIcon = document.getElementById('toastIcon');
-
-            toastMsg.innerText = message;
-            if (type === 'success') {
-                toastIcon.className = 'fa-solid fa-circle-check text-green-400';
-            } else if (type === 'error') {
-                toastIcon.className = 'fa-solid fa-circle-exclamation text-red-400';
-            } else {
-                toastIcon.className = 'fa-solid fa-circle-info text-blue-400';
-            }
-
-            toast.classList.remove('opacity-0', 'pointer-events-none');
-            setTimeout(() => {
-                toast.classList.add('opacity-0', 'pointer-events-none');
-            }, 3000);
-        }
-
-        function saveToLocalStorage() {
-            try {
-                localStorage.setItem('shared_files_local', JSON.stringify(localFiles));
-            } catch (e) {
-                console.warn('LocalStorage limit reached');
-            }
-        }
-
-        function loadFromLocalStorage() {
-            try {
-                const stored = localStorage.getItem('shared_files_local');
-                if (stored) {
-                    localFiles = JSON.parse(stored);
-                    renderFiles();
-                }
-            } catch (e) {}
-        }
-
-        // App Initialization on Window Load
         window.addEventListener('DOMContentLoaded', () => {
             setupEventListeners();
             initCloudEngine();
