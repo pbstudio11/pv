@@ -103,17 +103,29 @@
         <section id="uploadSection" class="relative group">
             <input type="file" id="fileInput" multiple class="hidden">
             <div id="dropZone" class="border-2 border-dashed border-slate-700 hover:border-emerald-500 bg-slate-800/40 hover:bg-slate-800/80 rounded-3xl p-8 sm:p-12 text-center transition-all duration-300 cursor-pointer relative overflow-hidden flex flex-col items-center justify-center">
-                <div class="w-20 h-20 rounded-2xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-3xl mb-4 group-hover:scale-110 group-hover:bg-emerald-500 group-hover:text-slate-900 transition duration-300 shadow-inner">
-                    <i class="fa-solid fa-file-arrow-up"></i>
+                <!-- Idle State -->
+                <div id="dropZoneIdle" class="flex flex-col items-center justify-center">
+                    <div class="w-20 h-20 rounded-2xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-3xl mb-4 group-hover:scale-110 group-hover:bg-emerald-500 group-hover:text-slate-900 transition duration-300 shadow-inner">
+                        <i class="fa-solid fa-file-arrow-up"></i>
+                    </div>
+                    <h3 class="text-lg sm:text-xl font-bold text-slate-200 mb-2">拖曳檔案至此處，或點擊選取檔案寄託</h3>
+                    <p class="text-xs sm:text-sm text-slate-400 max-w-md mb-6">
+                        支援 PDF、Word、Excel、TXT、程式碼、CSV 等各種文件與檔案格式。上傳後自動產生專屬二維碼與跨裝置分享連結。
+                    </p>
+                    <div class="flex flex-wrap items-center justify-center gap-3 text-xs text-slate-400">
+                        <span class="px-3 py-1.5 rounded-lg bg-slate-900/60 border border-slate-700/60"><i class="fa-solid fa-shield-halved text-emerald-400 mr-1.5"></i>本機加密傳輸</span>
+                        <span class="px-3 py-1.5 rounded-lg bg-slate-900/60 border border-slate-700/60"><i class="fa-solid fa-qrcode text-emerald-400 mr-1.5"></i>即時 QR Code</span>
+                        <span class="px-3 py-1.5 rounded-lg bg-slate-900/60 border border-slate-700/60"><i class="fa-solid fa-code text-emerald-400 mr-1.5"></i>線上文件預覽</span>
+                    </div>
                 </div>
-                <h3 class="text-lg sm:text-xl font-bold text-slate-200 mb-2">拖曳檔案至此處，或點擊選取檔案寄託</h3>
-                <p class="text-xs sm:text-sm text-slate-400 max-w-md mb-6">
-                    支援 PDF、Word、Excel、TXT、程式碼、CSV 等各種文件與檔案格式。上傳後自動產生專屬二維碼與跨裝置分享連結。
-                </p>
-                <div class="flex flex-wrap items-center justify-center gap-3 text-xs text-slate-400">
-                    <span class="px-3 py-1.5 rounded-lg bg-slate-900/60 border border-slate-700/60"><i class="fa-solid fa-shield-halved text-emerald-400 mr-1.5"></i>本機加密傳輸</span>
-                    <span class="px-3 py-1.5 rounded-lg bg-slate-900/60 border border-slate-700/60"><i class="fa-solid fa-qrcode text-emerald-400 mr-1.5"></i>即時 QR Code</span>
-                    <span class="px-3 py-1.5 rounded-lg bg-slate-900/60 border border-slate-700/60"><i class="fa-solid fa-code text-emerald-400 mr-1.5"></i>線上文件預覽</span>
+
+                <!-- Processing / Loading State -->
+                <div id="dropZoneLoading" class="hidden flex flex-col items-center justify-center py-4">
+                    <div class="w-16 h-16 rounded-2xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-3xl mb-4 animate-spin">
+                        <i class="fa-solid fa-spinner"></i>
+                    </div>
+                    <h3 class="text-lg font-bold text-slate-200 mb-1" id="uploadStatusTitle">正在讀取並處理檔案...</h3>
+                    <p class="text-xs text-slate-400" id="uploadStatusSub">請稍候，系統正在為您建立託管記錄與專屬 QR Code</p>
                 </div>
             </div>
         </section>
@@ -279,14 +291,18 @@
         }
 
         async function saveFileToIDB(fileRecord) {
-            try {
-                const db = await openIDB();
-                const tx = db.transaction(IDB_STORE, 'readwrite');
-                tx.objectStore(IDB_STORE).put(fileRecord);
-                return tx.complete;
-            } catch (e) {
-                console.error("IDB Save Error:", e);
-            }
+            return new Promise(async (resolve, reject) => {
+                try {
+                    const db = await openIDB();
+                    const tx = db.transaction(IDB_STORE, 'readwrite');
+                    const store = tx.objectStore(IDB_STORE);
+                    const req = store.put(fileRecord);
+                    req.onsuccess = () => resolve(true);
+                    req.onerror = (e) => reject(e);
+                } catch (e) {
+                    reject(e);
+                }
+            });
         }
 
         async function getAllFilesFromIDB() {
@@ -511,40 +527,70 @@
         async function handleFilesUpload(filesList) {
             if (!filesList || filesList.length === 0) return;
 
-            for (let i = 0; i < filesList.length; i++) {
-                const file = filesList[i];
-                try {
-                    const dataUrl = await readFileAsDataUrl(file);
-                    const fileRecord = {
-                        id: 'file_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6),
-                        name: file.name,
-                        size: file.size,
-                        type: file.type || 'application/octet-stream',
-                        uploadedAt: Date.now(),
-                        dataUrl: dataUrl
-                    };
+            const dropZoneIdle = document.getElementById('dropZoneIdle');
+            const dropZoneLoading = document.getElementById('dropZoneLoading');
+            const statusTitle = document.getElementById('uploadStatusTitle');
+            const statusSub = document.getElementById('uploadStatusSub');
 
-                    // Store to Local IDB
-                    await saveFileToIDB(fileRecord);
-
-                    // Sync to Cloud Firestore if reasonable size (< 700KB)
-                    if (db && file.size < 700 * 1024) {
-                        try {
-                            const cloudRef = doc(db, 'artifacts', appId, 'public', 'data', 'files', fileRecord.id);
-                            await setDoc(cloudRef, fileRecord);
-                        } catch (err) {
-                            console.warn("Firestore sync skipped:", err);
-                        }
-                    }
-
-                    filesData.unshift(fileRecord);
-                    showToast(`「${file.name}」已成功寄託！`, 'success');
-                } catch (e) {
-                    showToast(`上傳「${file.name}」失敗`, 'error');
-                }
+            if (dropZoneIdle && dropZoneLoading) {
+                dropZoneIdle.classList.add('hidden');
+                dropZoneLoading.classList.remove('hidden');
             }
 
-            renderFiles();
+            const totalFiles = filesList.length;
+            showToast(`正在處理 ${totalFiles} 個檔案，請稍候...`, 'info');
+
+            try {
+                for (let i = 0; i < totalFiles; i++) {
+                    const file = filesList[i];
+                    if (statusTitle) {
+                        statusTitle.innerText = `正在讀取並處理檔案 (${i + 1}/${totalFiles})...`;
+                    }
+                    if (statusSub) {
+                        statusSub.innerText = file.name;
+                    }
+
+                    try {
+                        const dataUrl = await readFileAsDataUrl(file);
+                        const fileRecord = {
+                            id: 'file_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6),
+                            name: file.name,
+                            size: file.size,
+                            type: file.type || 'application/octet-stream',
+                            uploadedAt: Date.now(),
+                            dataUrl: dataUrl
+                        };
+
+                        // Store to Local IDB
+                        await saveFileToIDB(fileRecord);
+
+                        // Update local array & UI immediately
+                        filesData.unshift(fileRecord);
+                        renderFiles();
+                        showToast(`「${file.name}」已成功寄託！`, 'success');
+
+                        // Sync to Cloud Firestore asynchronously in background (if size < 700KB)
+                        if (db && file.size < 700 * 1024) {
+                            (async () => {
+                                try {
+                                    const cloudRef = doc(db, 'artifacts', appId, 'public', 'data', 'files', fileRecord.id);
+                                    await setDoc(cloudRef, fileRecord);
+                                } catch (err) {
+                                    console.warn("Firestore background sync skipped:", err);
+                                }
+                            })();
+                        }
+                    } catch (e) {
+                        console.error("Upload error for file:", file.name, e);
+                        showToast(`上傳「${file.name}」失敗：${e.message || '讀取錯誤'}`, 'error');
+                    }
+                }
+            } finally {
+                if (dropZoneIdle && dropZoneLoading) {
+                    dropZoneIdle.classList.remove('hidden');
+                    dropZoneLoading.classList.add('hidden');
+                }
+            }
         }
 
         function readFileAsDataUrl(file) {
@@ -788,11 +834,20 @@
         document.addEventListener('DOMContentLoaded', () => {
             initFirebase();
 
+            // Prevent browser default drop behavior everywhere on page
+            window.addEventListener('dragover', (e) => e.preventDefault(), false);
+            window.addEventListener('drop', (e) => e.preventDefault(), false);
+
             // Drag and Drop Zone
             const dropZone = document.getElementById('dropZone');
             const fileInput = document.getElementById('fileInput');
 
-            dropZone.addEventListener('click', () => fileInput.click());
+            dropZone.addEventListener('click', () => {
+                const dropZoneLoading = document.getElementById('dropZoneLoading');
+                if (dropZoneLoading && !dropZoneLoading.classList.contains('hidden')) return;
+                fileInput.click();
+            });
+
             document.getElementById('btnNewUpload').addEventListener('click', () => fileInput.click());
 
             fileInput.addEventListener('change', (e) => {
@@ -803,6 +858,7 @@
             ['dragenter', 'dragover'].forEach(eventName => {
                 dropZone.addEventListener(eventName, (e) => {
                     e.preventDefault();
+                    e.stopPropagation();
                     dropZone.classList.add('border-emerald-500', 'bg-slate-800/80');
                 });
             });
@@ -810,11 +866,14 @@
             ['dragleave', 'drop'].forEach(eventName => {
                 dropZone.addEventListener(eventName, (e) => {
                     e.preventDefault();
+                    e.stopPropagation();
                     dropZone.classList.remove('border-emerald-500', 'bg-slate-800/80');
                 });
             });
 
             dropZone.addEventListener('drop', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
                 const files = e.dataTransfer.files;
                 handleFilesUpload(files);
             });
