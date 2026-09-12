@@ -133,6 +133,9 @@
                 <button id="insert-p-tag" class="px-3 py-1.5 bg-white dark:bg-gray-800 hover:bg-gray-100 border border-gray-200 dark:border-gray-700 rounded-lg text-xs font-medium transition shadow-sm flex items-center space-x-1">
                     <i class="fa-solid fa-paragraph text-indigo-500"></i><span data-i18n="insertPBtn">段落 &lt;p&gt;</span>
                 </button>
+                <button id="insert-br-tag" class="px-3 py-1.5 bg-white dark:bg-gray-800 hover:bg-gray-100 border border-gray-200 dark:border-gray-700 rounded-lg text-xs font-medium transition shadow-sm flex items-center space-x-1">
+                    <i class="fa-solid fa-arrows-alt-v text-indigo-500"></i><span data-i18n="insertBrBtn">空行 &lt;br&gt;</span>
+                </button>
                 <button id="insert-h2-tag" class="px-3 py-1.5 bg-white dark:bg-gray-800 hover:bg-gray-100 border border-gray-200 dark:border-gray-700 rounded-lg text-xs font-medium transition shadow-sm flex items-center space-x-1">
                     <i class="fa-solid fa-heading text-indigo-500"></i><span data-i18n="insertH2Btn">標題 &lt;h2&gt;</span>
                 </button>
@@ -191,6 +194,7 @@
                 chapTitlePlaceholder: "請輸入章節標題",
                 insertImageBtn: "插入圖片",
                 insertPBtn: "段落 <p>",
+                insertBrBtn: "空行 <br>",
                 insertH2Btn: "標題 <h2>",
                 insertBBtn: "粗體 <b>",
                 htmlHint: "支援選取文字快速包覆標籤",
@@ -232,6 +236,7 @@
                 chapTitlePlaceholder: "Enter chapter title",
                 insertImageBtn: "Insert Image",
                 insertPBtn: "Paragraph <p>",
+                insertBrBtn: "Break <br>",
                 insertH2Btn: "Heading <h2>",
                 insertBBtn: "Bold <b>",
                 htmlHint: "Supports wrapping selected text with tags",
@@ -273,6 +278,7 @@
                 chapTitlePlaceholder: "章のタイトルを入力",
                 insertImageBtn: "画像を挿入",
                 insertPBtn: "段落 <p>",
+                insertBrBtn: "改行 <br>",
                 insertH2Btn: "見出し <h2>",
                 insertBBtn: "太字 <b>",
                 htmlHint: "選択したテキストをタグで囲みます",
@@ -398,91 +404,109 @@
                 });
 
                 // 刪除章節
-            this.dom.deleteChapterBtn.addEventListener('click', () => {
-                if (this.chapters.length <= 1) {
-                    this.showToast(this.t('toastKeepOne'));
-                    return;
-                }
-                this.chapters.splice(this.currentIdx, 1);
-                this.currentIdx = Math.max(0, this.currentIdx - 1);
-                this.renderChapterList();
-                this.loadChapterToEditor(this.currentIdx);
-                this.showToast(this.t('toastDelChap'));
-            });
+                this.dom.deleteChapterBtn.addEventListener('click', () => {
+                    if (this.chapters.length <= 1) {
+                        this.showToast(this.t('toastKeepOne'));
+                        return;
+                    }
+                    this.chapters.splice(this.currentIdx, 1);
+                    this.currentIdx = Math.max(0, this.currentIdx - 1);
+                    this.renderChapterList();
+                    this.loadChapterToEditor(this.currentIdx);
+                    this.showToast(this.t('toastDelChap'));
+                });
 
-            // 修正游標定位問題的插入標籤輔助函式
-            const insertTag = (openTag, closeTag, defaultText) => {
-                const textarea = this.dom.currentContent;
-                const start = textarea.selectionStart;
-                const end = textarea.selectionEnd;
-                const val = textarea.value;
-                const selectedText = val.substring(start, end) || defaultText;
-                
-                const insertion = openTag + selectedText + closeTag;
-                textarea.value = val.substring(0, start) + insertion + val.substring(end);
-                
-                // 設定游標位置在插入內容之後或選取文字內部，避免跳至最底
-                const newCursorPos = start + insertion.length;
-                textarea.setSelectionRange(newCursorPos, newCursorPos);
-
-                if (this.chapters[this.currentIdx]) {
-                    this.chapters[this.currentIdx].content = textarea.value;
-                }
-                textarea.focus();
-            };
-
-            // 插入段落標籤
-            this.dom.insertPTagBtn.addEventListener('click', () => {
-                insertTag('<p>', '</p>', 'text...');
-            });
-
-            // 插入 H2 標籤
-            this.dom.insertH2TagBtn.addEventListener('click', () => {
-                insertTag('<h2>', '</h2>', 'heading...');
-            });
-
-            // 插入 B 標籤
-            this.dom.insertBTagBtn.addEventListener('click', () => {
-                insertTag('<b>', '</b>', 'bold text...');
-            });
-
-            // 圖片上傳處理與游標修正
-            this.dom.imageUploadInput.addEventListener('change', (e) => {
-                const file = e.target.files[0];
-                if (!file) return;
-
-                const reader = new FileReader();
-                reader.onload = (event) => {
-                    const dataUrl = event.target.result;
-                    const imgFileName = 'img_' + Date.now() + '_' + file.name.replace(/[^a-zA-Z0-9_.-]/g, '');
-                    
-                    this.images[imgFileName] = {
-                        dataUrl: dataUrl,
-                        mimeType: file.type || 'image/jpeg'
-                    };
-
-                    // 在目前游標處精確插入圖片標籤
+                // 修正游標定位問題的插入標籤輔助函式
+                const insertTag = (openTag, closeTag, defaultText) => {
                     const textarea = this.dom.currentContent;
-                    const pos = textarea.selectionStart;
-                    const imgTag = `<div style="text-align:center; margin: 1rem 0;"><img src="images/${imgFileName}" alt="Image" style="max-width:100%; height:auto; border-radius:8px;" /></div>`;
+                    const start = textarea.selectionStart;
+                    const end = textarea.selectionEnd;
+                    const val = textarea.value;
+                    const selectedText = val.substring(start, end) || defaultText;
                     
-                    textarea.value = textarea.value.substring(0, pos) + imgTag + textarea.value.substring(pos);
+                    const insertion = openTag + selectedText + closeTag;
+                    textarea.value = val.substring(0, start) + insertion + val.substring(end);
                     
-                    const newCursorPos = pos + imgTag.length;
+                    const newCursorPos = start + insertion.length;
                     textarea.setSelectionRange(newCursorPos, newCursorPos);
 
                     if (this.chapters[this.currentIdx]) {
                         this.chapters[this.currentIdx].content = textarea.value;
                     }
-
-                    this.showToast(this.t('toastInsertImg') + file.name);
-                    this.dom.imageUploadInput.value = '';
                     textarea.focus();
                 };
-                reader.readAsDataURL(file);
-            });
 
-            // 打包下載 EPUB
+                // 插入段落標籤
+                this.dom.insertPTagBtn.addEventListener('click', () => {
+                    insertTag('<p>', '</p>', 'text...');
+                });
+
+                // 插入空行標籤 (<br/>)
+                const insertBrBtn = document.getElementById('insert-br-tag');
+                if (insertBrBtn) {
+                    insertBrBtn.addEventListener('click', () => {
+                        const textarea = this.dom.currentContent;
+                        const pos = textarea.selectionStart;
+                        const val = textarea.value;
+                        const insertion = '<br/>';
+                        
+                        textarea.value = val.substring(0, pos) + insertion + val.substring(pos);
+                        const newCursorPos = pos + insertion.length;
+                        textarea.setSelectionRange(newCursorPos, newCursorPos);
+
+                        if (this.chapters[this.currentIdx]) {
+                            this.chapters[this.currentIdx].content = textarea.value;
+                        }
+                        textarea.focus();
+                    });
+                }
+
+                // 插入 H2 標籤
+                this.dom.insertH2TagBtn.addEventListener('click', () => {
+                    insertTag('<h2>', '</h2>', 'heading...');
+                });
+
+                // 插入 B 標籤
+                this.dom.insertBTagBtn.addEventListener('click', () => {
+                    insertTag('<b>', '</b>', 'bold text...');
+                });
+
+                // 圖片上傳處理與游標修正
+                this.dom.imageUploadInput.addEventListener('change', (e) => {
+                    const file = e.target.files[0];
+                    if (!file) return;
+
+                    const reader = new FileReader();
+                    reader.onload = (event) => {
+                        const dataUrl = event.target.result;
+                        const imgFileName = 'img_' + Date.now() + '_' + file.name.replace(/[^a-zA-Z0-9_.-]/g, '');
+                        
+                        this.images[imgFileName] = {
+                            dataUrl: dataUrl,
+                            mimeType: file.type || 'image/jpeg'
+                        };
+
+                        const textarea = this.dom.currentContent;
+                        const pos = textarea.selectionStart;
+                        const imgTag = `<div style="text-align:center; margin: 1rem 0;"><img src="images/${imgFileName}" alt="Image" style="max-width:100%; height:auto; border-radius:8px;" /></div>`;
+                        
+                        textarea.value = textarea.value.substring(0, pos) + imgTag + textarea.value.substring(pos);
+                        
+                        const newCursorPos = pos + imgTag.length;
+                        textarea.setSelectionRange(newCursorPos, newCursorPos);
+
+                        if (this.chapters[this.currentIdx]) {
+                            this.chapters[this.currentIdx].content = textarea.value;
+                        }
+
+                        this.showToast(this.t('toastInsertImg') + file.name);
+                        this.dom.imageUploadInput.value = '';
+                        textarea.focus();
+                    };
+                    reader.readAsDataURL(file);
+                });
+
+                // 打包下載 EPUB
                 this.dom.exportBtn.addEventListener('click', () => {
                     this.generateAndDownloadEpub();
                 });
@@ -622,7 +646,7 @@
 </container>`;
                     zip.file("META-INF/container.xml", containerXml);
 
-                    // 3. 處理圖片資源檔案加入 OEBPS/images/ (確保 Base64 資料分離正確)
+                    // 3. 處理圖片資源檔案加入 OEBPS/images/
                     const imageManifestItems = [];
                     for (const [imgName, imgObj] of Object.entries(this.images)) {
                         const parts = imgObj.dataUrl.split(',');
@@ -654,7 +678,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="${this.dom.metaLang.value}">
 <head>
     <title>${this.escapeHtml(chap.title)}</title>
-    <link rel="stylesheet" href="style.css"/>
+    <link rel="stylesheet" href="style.css" type="text/css"/>
 </head>
 <body>
     <h1>${this.escapeHtml(chap.title)}</h1>
@@ -728,18 +752,42 @@ img { max-width: 100%; height: auto; display: block; margin: 1rem auto; }
 </ncx>`;
                     zip.file("OEBPS/toc.ncx", tocNcx);
 
-                    // 8. 生成 Blob 並觸發下載
-                    const content = await zip.generateAsync({ type: "blob" });
-                    const blobUrl = URL.createObjectURL(content);
+                    // 8. 生成 Blob 並以標準相容方式觸發下載
+                    const content = await zip.generateAsync({ type: "blob", mimeType: "application/epub+zip" });
                     
                     const safeFileName = bookTitle.replace(/[^a-zA-Z0-9_\u4e00-\u9fa5]/g, '_');
                     const downloadAnchor = document.createElement('a');
+                    downloadAnchor.style.display = 'none';
+                    
+                    if (window.showSaveFilePicker) {
+                        try {
+                            const handle = await window.showSaveFilePicker({
+                                suggestedName: `${safeFileName}.epub`,
+                                types: [{
+                                    description: 'EPUB E-book',
+                                    accept: { 'application/epub+zip': ['.epub'] }
+                                }]
+                            });
+                            const writable = await handle.createWritable();
+                            await writable.write(content);
+                            await writable.close();
+                            this.showToast(this.t('toastSuccess'));
+                            return;
+                        } catch (pickerErr) {
+                            if (pickerErr.name === 'AbortError') return; // 使用者取消不處理
+                        }
+                    }
+
+                    const blobUrl = URL.createObjectURL(content);
                     downloadAnchor.href = blobUrl;
                     downloadAnchor.download = `${safeFileName}.epub`;
                     document.body.appendChild(downloadAnchor);
                     downloadAnchor.click();
-                    document.body.removeChild(downloadAnchor);
-                    URL.revokeObjectURL(blobUrl);
+                    
+                    setTimeout(() => {
+                        document.body.removeChild(downloadAnchor);
+                        URL.revokeObjectURL(blobUrl);
+                    }, 1000);
 
                     this.showToast(this.t('toastSuccess'));
                 } catch (err) {
