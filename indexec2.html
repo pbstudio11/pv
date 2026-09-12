@@ -33,7 +33,6 @@
         </div>
 
         <div class="flex items-center space-x-3">
-            <!-- 語言切換 -->
             <select id="lang-select" class="text-xs bg-slate-100 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg px-2 py-1.5 focus:outline-none">
                 <option value="zh" selected>繁體中文</option>
                 <option value="en">English</option>
@@ -56,7 +55,6 @@
         
         <!-- 左側：書籍設定與章節列表 (4格) -->
         <div class="md:col-span-4 flex flex-col space-y-6">
-            <!-- 書籍基本設定 -->
             <div class="bg-white dark:bg-slate-800 rounded-2xl p-5 border border-slate-200 dark:border-slate-700 shadow-sm space-y-4">
                 <h2 class="font-bold text-sm text-slate-700 dark:text-slate-300 flex items-center space-x-2 border-b pb-3 dark:border-slate-700">
                     <i class="fa-solid fa-circle-info text-indigo-500"></i>
@@ -72,7 +70,6 @@
                 </div>
             </div>
 
-            <!-- 章節管理區 -->
             <div class="bg-white dark:bg-slate-800 rounded-2xl p-5 border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col space-y-3 flex-1">
                 <div class="flex items-center justify-between border-b pb-3 dark:border-slate-700">
                     <h2 class="font-bold text-sm text-slate-700 dark:text-slate-300 flex items-center space-x-2">
@@ -84,12 +81,11 @@
                         <span data-i18n="add_chapter">新增章節</span>
                     </button>
                 </div>
-                <div id="chapter-list-container" class="space-y-2 overflow-y-auto max-h-[300px] pr-1">
-                    <!-- 動態產生的章節列表 -->
-                </div>
+                <div id="chapter-list-container" class="space-y-2 overflow-y-auto max-h-[300px] pr-1"></div>
             </div>
         </div>
 
+        <!-- 右側：編輯與排版區 (8格) -->
         <div class="md:col-span-8 bg-white dark:bg-slate-800 rounded-2xl p-6 border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col space-y-4">
             <h2 class="font-bold text-sm text-slate-700 dark:text-slate-300 flex items-center space-x-2 border-b pb-3 dark:border-slate-700">
                 <i class="fa-solid fa-pen-nib text-indigo-500"></i>
@@ -132,9 +128,7 @@
                     <i class="fa-solid fa-xmark text-lg"></i>
                 </button>
             </div>
-            <div id="preview-content-area" class="p-6 overflow-y-auto flex-1 space-y-6 leading-relaxed">
-                <!-- 動態預覽內容 -->
-            </div>
+            <div id="preview-content-area" class="p-6 overflow-y-auto flex-1 space-y-6 leading-relaxed"></div>
         </div>
     </div>
 
@@ -212,7 +206,7 @@
                     { id: 2, title: "第二章：正文內容", content: "<p>這是第二章的內容。點擊右上角的打包下載即可產生成品！</p>" }
                 ];
                 this.currentChapterId = 1;
-                this.images = {}; // 儲存上傳的圖片 { filename: base64Data }
+                this.images = {};
 
                 this.initElements();
                 this.initEvents();
@@ -256,7 +250,6 @@
                 this.addChapterBtn.addEventListener('click', () => this.addChapter());
                 this.langSelect.addEventListener('change', () => this.renderLanguage());
 
-                // 即時同步編輯內容至目前章節
                 this.currentChapterTitleInput.addEventListener('input', () => {
                     const chap = this.chapters.find(c => c.id === this.currentChapterId);
                     if (chap) {
@@ -272,7 +265,7 @@
                     }
                 });
 
-                // 排版按鈕事件（精確保留選取區與游標位置）
+                // 完美保留游標位置的按鈕綁定
                 this.btnTagP.addEventListener('click', () => this.wrapTextWithTag('<p>', '</p>'));
                 this.btnTagH2.addEventListener('click', () => this.wrapTextWithTag('<h2>', '</h2>'));
                 this.btnTagB.addEventListener('click', () => this.wrapTextWithTag('<b>', '</b>'));
@@ -370,6 +363,7 @@
                 this.loadCurrentChapterToEditor();
             }
 
+            // 確保游標絕不亂跳的包覆函數
             wrapTextWithTag(openTag, closeTag) {
                 const ta = this.currentChapterContentTextarea;
                 const start = ta.selectionStart;
@@ -387,6 +381,7 @@
                 if (chap) chap.content = ta.value;
             }
 
+            // 確保游標絕不亂跳的插入函數
             insertAtCursor(text) {
                 const ta = this.currentChapterContentTextarea;
                 const start = ta.selectionStart;
@@ -465,13 +460,13 @@
 
             async generateEpub() {
                 try {
-                    this.showToast("正在建立標準橫向 EPUB 檔案...");
+                    this.showToast("正在建立標準 EPUB 檔案...");
                     const zip = new JSZip();
 
-                    // 1. mimetype (必須為第一個且無壓縮 STORE)
+                    // 1. mimetype (必須為第一個且不可壓縮 STORE)
                     zip.file("mimetype", "application/epub+zip", { compression: "STORE" });
 
-                    // 2. META-INF/container.xml
+                    // 2. container.xml
                     zip.file("META-INF/container.xml", `<?xml version="1.0" encoding="UTF-8"?>
 <container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container">
     <rootfiles>
@@ -479,7 +474,7 @@
     </rootfiles>
 </container>`);
 
-                    // 3. OEBPS/style.css
+                    // 3. style.css
                     zip.file("OEBPS/style.css", `
 body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; line-height: 1.8; padding: 2rem; color: #222; direction: ltr; }
 h1 { font-size: 1.8rem; color: #4f46e5; border-bottom: 2px solid #e0e7ff; padding-bottom: 0.5rem; margin-bottom: 1.5rem; }
@@ -488,7 +483,7 @@ p { margin-bottom: 1.2rem; text-align: justify; }
 img { max-width: 100%; height: auto; }
 `);
 
-                    // 4. 寫入圖片資源 (如有)
+                    // 4. 寫入圖片
                     const imageManifestItems = [];
                     for (const [filename, dataUrl] of Object.entries(this.images)) {
                         const base64Parts = dataUrl.split(',');
@@ -500,7 +495,7 @@ img { max-width: 100%; height: auto; }
                         }
                     }
 
-                    // 5. 產生各章節 XHTML 檔案
+                    // 5. 章節檔案
                     const manifestItems = [];
                     const spineItems = [];
                     const ncxNavPoints = [];
@@ -536,7 +531,6 @@ img { max-width: 100%; height: auto; }
         </navPoint>`);
                     });
 
-                    // 附加圖片至 manifest
                     imageManifestItems.forEach((img, idx) => {
                         manifestItems.push(`<item id="img_${idx}" href="images/${img.filename}" media-type="${img.mimeType}"/>`);
                     });
@@ -548,7 +542,7 @@ img { max-width: 100%; height: auto; }
                         return v.toString(16);
                     });
 
-                    // 6. OEBPS/toc.ncx
+                    // 6. toc.ncx
                     zip.file("OEBPS/toc.ncx", `<?xml version="1.0" encoding="UTF-8"?>
 <ncx xmlns="http://www.daisy.org/z3986/2005/ncx/" version="2005-1">
     <head>
@@ -563,7 +557,7 @@ img { max-width: 100%; height: auto; }
     </navMap>
 </ncx>`);
 
-                    // 7. OEBPS/content.opf
+                    // 7. content.opf
                     zip.file("OEBPS/content.opf", `<?xml version="1.0" encoding="UTF-8"?>
 <package xmlns="http://www.idpf.org/2007/opf" unique-id="BookId" version="3.0" dir="ltr">
     <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
@@ -583,7 +577,7 @@ img { max-width: 100%; height: auto; }
     </spine>
 </package>`);
 
-                    // 8. 產生 Blob 下載
+                    // 8. 產生下載
                     const content = await zip.generateAsync({ type: "blob", mimeType: "application/epub+zip" });
                     
                     const safeName = (this.metaTitle.value || "book").replace(/[^a-zA-Z0-9_\u4e00-\u9fa5]/g, '_');
