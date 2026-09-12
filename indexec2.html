@@ -240,7 +240,10 @@
             }
 
             initEvents() {
-                this.exportBtn.addEventListener('click', () => this.generateEpub());
+                this.exportBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    this.generateEpub();
+                });
                 this.previewBtn.addEventListener('click', () => this.openPreview());
                 this.closePreviewBtn.addEventListener('click', () => this.closePreview());
                 this.previewModal.addEventListener('click', (e) => {
@@ -265,11 +268,11 @@
                     }
                 });
 
-                // 完美保留游標位置的按鈕綁定
-                this.btnTagP.addEventListener('click', () => this.wrapTextWithTag('<p>', '</p>'));
-                this.btnTagH2.addEventListener('click', () => this.wrapTextWithTag('<h2>', '</h2>'));
-                this.btnTagB.addEventListener('click', () => this.wrapTextWithTag('<b>', '</b>'));
-                this.btnTagBr.addEventListener('click', () => this.insertAtCursor('<br/>\n'));
+                // 完美保留游標與滾動位置的按鈕綁定 (防止跳到最下)
+                this.btnTagP.addEventListener('click', (e) => { e.preventDefault(); this.wrapTextWithTag('<p>', '</p>'); });
+                this.btnTagH2.addEventListener('click', (e) => { e.preventDefault(); this.wrapTextWithTag('<h2>', '</h2>'); });
+                this.btnTagB.addEventListener('click', (e) => { e.preventDefault(); this.wrapTextWithTag('<b>', '</b>'); });
+                this.btnTagBr.addEventListener('click', (e) => { e.preventDefault(); this.insertAtCursor('<br/>\n'); });
                 this.imageUploadInput.addEventListener('change', (e) => this.handleImageUpload(e));
             }
 
@@ -363,11 +366,11 @@
                 this.loadCurrentChapterToEditor();
             }
 
-            // 確保游標絕不亂跳的包覆函數
             wrapTextWithTag(openTag, closeTag) {
                 const ta = this.currentChapterContentTextarea;
                 const start = ta.selectionStart;
                 const end = ta.selectionEnd;
+                const scrollTop = ta.scrollTop; // 記住當前捲動位置
                 const val = ta.value;
                 const selectedText = val.substring(start, end);
 
@@ -376,16 +379,17 @@
                 const newCursorPos = start + openTag.length + selectedText.length + closeTag.length;
                 ta.focus();
                 ta.setSelectionRange(newCursorPos, newCursorPos);
+                ta.scrollTop = scrollTop; // 恢復捲動位置防止跳動
                 
                 const chap = this.chapters.find(c => c.id === this.currentChapterId);
                 if (chap) chap.content = ta.value;
             }
 
-            // 確保游標絕不亂跳的插入函數
             insertAtCursor(text) {
                 const ta = this.currentChapterContentTextarea;
                 const start = ta.selectionStart;
                 const end = ta.selectionEnd;
+                const scrollTop = ta.scrollTop; // 記住當前捲動位置
                 const val = ta.value;
 
                 ta.value = val.substring(0, start) + text + val.substring(end);
@@ -393,6 +397,7 @@
                 const newCursorPos = start + text.length;
                 ta.focus();
                 ta.setSelectionRange(newCursorPos, newCursorPos);
+                ta.scrollTop = scrollTop; // 恢復捲動位置防止跳動
 
                 const chap = this.chapters.find(c => c.id === this.currentChapterId);
                 if (chap) chap.content = ta.value;
@@ -577,7 +582,7 @@ img { max-width: 100%; height: auto; }
     </spine>
 </package>`);
 
-                    // 8. 產生下載
+                    // 8. 產生 Blob 下載 (修正 Blob 建立與下載觸發)
                     const content = await zip.generateAsync({ type: "blob", mimeType: "application/epub+zip" });
                     
                     const safeName = (this.metaTitle.value || "book").replace(/[^a-zA-Z0-9_\u4e00-\u9fa5]/g, '_');
@@ -585,12 +590,14 @@ img { max-width: 100%; height: auto; }
                     const a = document.createElement('a');
                     a.href = url;
                     a.download = `${safeName}.epub`;
+                    a.style.display = 'none';
                     document.body.appendChild(a);
                     a.click();
+                    
                     setTimeout(() => {
                         document.body.removeChild(a);
                         URL.revokeObjectURL(url);
-                    }, 1000);
+                    }, 2000);
 
                     this.showToast(this.getCurrentLangText('toast_success'));
                 } catch (err) {
