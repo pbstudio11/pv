@@ -21,7 +21,6 @@
 </head>
 <body class="bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 min-h-screen flex flex-col font-sans">
 
-    <!-- 頂部導覽列 -->
     <header class="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-6 py-4 flex items-center justify-between shadow-sm sticky top-0 z-30">
         <div class="flex items-center space-x-3">
             <div class="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center shadow-md">
@@ -41,6 +40,11 @@
                 <option value="ja">日本語</option>
             </select>
 
+            <button id="preview-btn" class="px-4 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 text-sm font-bold transition flex items-center space-x-2">
+                <i class="fa-solid fa-eye"></i>
+                <span data-i18n="preview_btn">預覽電子書</span>
+            </button>
+
             <button id="export-epub-btn" class="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold shadow-lg shadow-indigo-600/20 transition flex items-center space-x-2">
                 <i class="fa-solid fa-file-arrow-down"></i>
                 <span data-i18n="export_btn">打包下載 EPUB</span>
@@ -48,7 +52,6 @@
         </div>
     </header>
 
-    <!-- 主要操作區 -->
     <main class="flex-1 max-w-6xl w-full mx-auto p-6 grid grid-cols-1 md:grid-cols-12 gap-6">
         
         <!-- 左側：書籍設定與章節列表 (4格) -->
@@ -119,6 +122,24 @@
         </div>
     </main>
 
+    <!-- 預覽彈跳視窗 -->
+    <div id="preview-modal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 hidden">
+        <div class="bg-white dark:bg-slate-800 rounded-2xl max-w-2xl w-full max-h-[85vh] flex flex-col shadow-2xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+            <div class="px-6 py-4 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
+                <h3 id="preview-modal-title" class="font-bold text-base flex items-center space-x-2">
+                    <i class="fa-solid fa-book-open text-indigo-500"></i>
+                    <span data-i18n="preview_title">電子書內容預覽</span>
+                </h3>
+                <button id="close-preview-btn" class="w-8 h-8 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center justify-center text-slate-500 transition">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+            <div id="preview-content-area" class="p-6 overflow-y-auto flex-1 space-y-6 leading-relaxed">
+                <!-- 動態預覽內容 -->
+            </div>
+        </div>
+    </div>
+
     <!-- Toast 訊息通知 -->
     <div id="toast" class="fixed bottom-6 right-6 z-50 bg-slate-900/90 text-white px-4 py-3 rounded-xl shadow-2xl backdrop-blur-md flex items-center space-x-2 border border-slate-700 transition-all duration-300 transform translate-y-10 opacity-0 hidden">
         <i class="fa-solid fa-circle-check text-emerald-400 text-lg"></i>
@@ -129,6 +150,8 @@
         const i18nDictionary = {
             zh: {
                 export_btn: "打包下載 EPUB",
+                preview_btn: "預覽電子書",
+                preview_title: "電子書內容預覽",
                 book_meta: "書籍基本設定",
                 book_title_label: "書名 (Title)",
                 book_author_label: "作者 (Author)",
@@ -146,6 +169,8 @@
             },
             en: {
                 export_btn: "Export EPUB",
+                preview_btn: "Preview Book",
+                preview_title: "Book Content Preview",
                 book_meta: "Book Metadata",
                 book_title_label: "Title",
                 book_author_label: "Author",
@@ -163,6 +188,8 @@
             },
             ja: {
                 export_btn: "EPUBをダウンロード",
+                preview_btn: "プレビュー",
+                preview_title: "電子書籍プレビュー",
                 book_meta: "書籍設定",
                 book_title_label: "タイトル",
                 book_author_label: "著者",
@@ -198,6 +225,11 @@
 
             initElements() {
                 this.exportBtn = document.getElementById('export-epub-btn');
+                this.previewBtn = document.getElementById('preview-btn');
+                this.previewModal = document.getElementById('preview-modal');
+                this.closePreviewBtn = document.getElementById('close-preview-btn');
+                this.previewContentArea = document.getElementById('preview-content-area');
+
                 this.metaTitle = document.getElementById('meta-title');
                 this.metaAuthor = document.getElementById('meta-author');
                 this.chapterListContainer = document.getElementById('chapter-list-container');
@@ -217,6 +249,12 @@
 
             initEvents() {
                 this.exportBtn.addEventListener('click', () => this.generateEpub());
+                this.previewBtn.addEventListener('click', () => this.openPreview());
+                this.closePreviewBtn.addEventListener('click', () => this.closePreview());
+                this.previewModal.addEventListener('click', (e) => {
+                    if (e.target === this.previewModal) this.closePreview();
+                });
+
                 this.addChapterBtn.addEventListener('click', () => this.addChapter());
                 this.langSelect.addEventListener('change', () => this.renderLanguage());
 
@@ -236,7 +274,7 @@
                     }
                 });
 
-                // 排版按鈕事件
+                // 排版按鈕事件（保留游標位置）
                 this.btnTagP.addEventListener('click', () => this.wrapTextWithTag('<p>', '</p>'));
                 this.btnTagH2.addEventListener('click', () => this.wrapTextWithTag('<h2>', '</h2>'));
                 this.btnTagB.addEventListener('click', () => this.wrapTextWithTag('<b>', '</b>'));
@@ -342,8 +380,10 @@
                 const selectedText = val.substring(start, end);
 
                 ta.value = val.substring(0, start) + openTag + selectedText + closeTag + val.substring(end);
+                
+                const newCursorPos = start + openTag.length + selectedText.length + closeTag.length;
                 ta.focus();
-                ta.setSelectionRange(start + openTag.length, end + openTag.length);
+                ta.setSelectionRange(newCursorPos, newCursorPos);
                 
                 const chap = this.chapters.find(c => c.id === this.currentChapterId);
                 if (chap) chap.content = ta.value;
@@ -355,8 +395,10 @@
                 const val = ta.value;
 
                 ta.value = val.substring(0, start) + text + val.substring(start);
+                
+                const newCursorPos = start + text.length;
                 ta.focus();
-                ta.setSelectionRange(start + text.length, start + text.length);
+                ta.setSelectionRange(newCursorPos, newCursorPos);
 
                 const chap = this.chapters.find(c => c.id === this.currentChapterId);
                 if (chap) chap.content = ta.value;
@@ -372,7 +414,6 @@
                     const filename = `img_${Date.now()}_${file.name.replace(/[^a-zA-Z0-9_.-]/g, '_')}`;
                     this.images[filename] = base64Data;
 
-                    // 在游標處插入 XHTML 圖片標籤
                     const imgTag = `<div style="text-align:center; margin: 1.5rem 0;"><img src="images/${filename}" alt="image" style="max-width:100%; height:auto; border-radius:8px;" /></div>\n`;
                     this.insertAtCursor(imgTag);
                     this.showToast(this.getCurrentLangText('toast_img_success'));
@@ -382,6 +423,42 @@
                     this.showToast(this.getCurrentLangText('toast_img_error'));
                 };
                 reader.readAsDataURL(file);
+            }
+
+            openPreview() {
+                const bookTitle = this.metaTitle.value || "無書名";
+                const bookAuthor = this.metaAuthor.value || "無作者";
+                
+                let html = `
+                    <div class="text-center pb-6 border-b border-slate-200 dark:border-slate-700">
+                        <h2 class="text-2xl font-black text-indigo-600 dark:text-indigo-400">${this.escapeHtml(bookTitle)}</h2>
+                        <p class="text-sm text-slate-500 mt-1">作者：${this.escapeHtml(bookAuthor)}</p>
+                    </div>
+                `;
+
+                this.chapters.forEach((chap, idx) => {
+                    // 替換圖片路徑預覽（base64）
+                    let content = chap.content || "";
+                    for (const [filename, dataUrl] of Object.entries(this.images)) {
+                        content = content.replaceAll(`images/${filename}`, dataUrl);
+                    }
+
+                    html += `
+                        <div class="space-y-4 pt-4 border-b border-slate-100 dark:border-slate-800 pb-6">
+                            <h3 class="text-lg font-bold text-slate-800 dark:text-slate-200">${idx + 1}. ${this.escapeHtml(chap.title)}</h3>
+                            <div class="prose dark:prose-invert max-w-none text-slate-700 dark:text-slate-300">
+                                ${content}
+                            </div>
+                        </div>
+                    `;
+                });
+
+                this.previewContentArea.innerHTML = html;
+                this.previewModal.classList.remove('hidden');
+            }
+
+            closePreview() {
+                this.previewModal.classList.add('hidden');
             }
 
             escapeHtml(str) {
@@ -416,7 +493,6 @@ img { max-width: 100%; height: auto; }
                     // 4. 寫入圖片資源 (如有)
                     const imageManifestItems = [];
                     for (const [filename, dataUrl] of Object.entries(this.images)) {
-                        // 轉換 Base64 為二進位
                         const base64Parts = dataUrl.split(',');
                         const mimeType = base64Parts[0].match(/:(.*?);/)[1];
                         const base64Data = base64Parts[1];
