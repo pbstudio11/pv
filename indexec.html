@@ -398,80 +398,91 @@
                 });
 
                 // 刪除章節
-                this.dom.deleteChapterBtn.addEventListener('click', () => {
-                    if (this.chapters.length <= 1) {
-                        this.showToast(this.t('toastKeepOne'));
-                        return;
-                    }
-                    this.chapters.splice(this.currentIdx, 1);
-                    this.currentIdx = Math.max(0, this.currentIdx - 1);
-                    this.renderChapterList();
-                    this.loadChapterToEditor(this.currentIdx);
-                    this.showToast(this.t('toastDelChap'));
-                });
+            this.dom.deleteChapterBtn.addEventListener('click', () => {
+                if (this.chapters.length <= 1) {
+                    this.showToast(this.t('toastKeepOne'));
+                    return;
+                }
+                this.chapters.splice(this.currentIdx, 1);
+                this.currentIdx = Math.max(0, this.currentIdx - 1);
+                this.renderChapterList();
+                this.loadChapterToEditor(this.currentIdx);
+                this.showToast(this.t('toastDelChap'));
+            });
 
-                // 插入標籤通用輔助函式 (支援選取文字包覆)
-                const insertTag = (openTag, closeTag, defaultText) => {
-                    const textarea = this.dom.currentContent;
-                    const start = textarea.selectionStart;
-                    const end = textarea.selectionEnd;
-                    const val = textarea.value;
-                    const selectedText = val.substring(start, end) || defaultText;
+            // 修正游標定位問題的插入標籤輔助函式
+            const insertTag = (openTag, closeTag, defaultText) => {
+                const textarea = this.dom.currentContent;
+                const start = textarea.selectionStart;
+                const end = textarea.selectionEnd;
+                const val = textarea.value;
+                const selectedText = val.substring(start, end) || defaultText;
+                
+                const insertion = openTag + selectedText + closeTag;
+                textarea.value = val.substring(0, start) + insertion + val.substring(end);
+                
+                // 設定游標位置在插入內容之後或選取文字內部，避免跳至最底
+                const newCursorPos = start + insertion.length;
+                textarea.setSelectionRange(newCursorPos, newCursorPos);
+
+                if (this.chapters[this.currentIdx]) {
+                    this.chapters[this.currentIdx].content = textarea.value;
+                }
+                textarea.focus();
+            };
+
+            // 插入段落標籤
+            this.dom.insertPTagBtn.addEventListener('click', () => {
+                insertTag('<p>', '</p>', 'text...');
+            });
+
+            // 插入 H2 標籤
+            this.dom.insertH2TagBtn.addEventListener('click', () => {
+                insertTag('<h2>', '</h2>', 'heading...');
+            });
+
+            // 插入 B 標籤
+            this.dom.insertBTagBtn.addEventListener('click', () => {
+                insertTag('<b>', '</b>', 'bold text...');
+            });
+
+            // 圖片上傳處理與游標修正
+            this.dom.imageUploadInput.addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    const dataUrl = event.target.result;
+                    const imgFileName = 'img_' + Date.now() + '_' + file.name.replace(/[^a-zA-Z0-9_.-]/g, '');
                     
-                    textarea.value = val.substring(0, start) + openTag + selectedText + closeTag + val.substring(end);
+                    this.images[imgFileName] = {
+                        dataUrl: dataUrl,
+                        mimeType: file.type || 'image/jpeg'
+                    };
+
+                    // 在目前游標處精確插入圖片標籤
+                    const textarea = this.dom.currentContent;
+                    const pos = textarea.selectionStart;
+                    const imgTag = `<div style="text-align:center; margin: 1rem 0;"><img src="images/${imgFileName}" alt="Image" style="max-width:100%; height:auto; border-radius:8px;" /></div>`;
+                    
+                    textarea.value = textarea.value.substring(0, pos) + imgTag + textarea.value.substring(pos);
+                    
+                    const newCursorPos = pos + imgTag.length;
+                    textarea.setSelectionRange(newCursorPos, newCursorPos);
+
                     if (this.chapters[this.currentIdx]) {
                         this.chapters[this.currentIdx].content = textarea.value;
                     }
+
+                    this.showToast(this.t('toastInsertImg') + file.name);
+                    this.dom.imageUploadInput.value = '';
                     textarea.focus();
                 };
+                reader.readAsDataURL(file);
+            });
 
-                // 插入段落標籤
-                this.dom.insertPTagBtn.addEventListener('click', () => {
-                    insertTag('<p>', '</p>', 'text...');
-                });
-
-                // 插入 H2 標籤
-                this.dom.insertH2TagBtn.addEventListener('click', () => {
-                    insertTag('<h2>', '</h2>', 'heading...');
-                });
-
-                // 插入 B 標籤
-                this.dom.insertBTagBtn.addEventListener('click', () => {
-                    insertTag('<b>', '</b>', 'bold text...');
-                });
-
-                // 圖片上傳處理
-                this.dom.imageUploadInput.addEventListener('change', (e) => {
-                    const file = e.target.files[0];
-                    if (!file) return;
-
-                    const reader = new FileReader();
-                    reader.onload = (event) => {
-                        const dataUrl = event.target.result;
-                        const imgFileName = 'img_' + Date.now() + '_' + file.name.replace(/[^a-zA-Z0-9_.-]/g, '');
-                        
-                        this.images[imgFileName] = {
-                            dataUrl: dataUrl,
-                            mimeType: file.type || 'image/jpeg'
-                        };
-
-                        // 在游標處插入圖片標籤
-                        const textarea = this.dom.currentContent;
-                        const pos = textarea.selectionStart;
-                        const imgTag = `<div style="text-align:center; margin: 1rem 0;"><img src="images/${imgFileName}" alt="Image" style="max-width:100%; height:auto; border-radius:8px;" /></div>`;
-                        
-                        textarea.value = textarea.value.substring(0, pos) + imgTag + textarea.value.substring(pos);
-                        if (this.chapters[this.currentIdx]) {
-                            this.chapters[this.currentIdx].content = textarea.value;
-                        }
-
-                        this.showToast(this.t('toastInsertImg') + file.name);
-                        this.dom.imageUploadInput.value = '';
-                    };
-                    reader.readAsDataURL(file);
-                });
-
-                // 打包下載 EPUB
+            // 打包下載 EPUB
                 this.dom.exportBtn.addEventListener('click', () => {
                     this.generateAndDownloadEpub();
                 });
@@ -592,7 +603,7 @@
             }
 
             /**
-             * 核心：修復後的 EPUB 打包邏輯 (確保標準 EPUB 3 相容命名空間與結構)
+             * 核心：修復後的 EPUB 打包邏輯 (確保標準 EPUB 3 相容命名空間與結構與正確的 Base64 處理)
              */
             async generateAndDownloadEpub() {
                 try {
@@ -611,16 +622,17 @@
 </container>`;
                     zip.file("META-INF/container.xml", containerXml);
 
-                    // 3. 處理圖片資源檔案加入 OEBPS/images/
+                    // 3. 處理圖片資源檔案加入 OEBPS/images/ (確保 Base64 資料分離正確)
                     const imageManifestItems = [];
                     for (const [imgName, imgObj] of Object.entries(this.images)) {
-                        const base64Data = imgObj.dataUrl.split(',')[1];
-                        if (base64Data) {
+                        const parts = imgObj.dataUrl.split(',');
+                        if (parts.length === 2) {
+                            const base64Data = parts[1];
                             zip.file(`OEBPS/images/${imgName}`, base64Data, { base64: true });
                             imageManifestItems.push({
                                 id: imgName.replace(/[^a-zA-Z0-9_]/g, '_'),
                                 href: `images/${imgName}`,
-                                mediaType: imgObj.mimeType
+                                mediaType: imgObj.mimeType || 'image/jpeg'
                             });
                         }
                     }
@@ -646,7 +658,7 @@
 </head>
 <body>
     <h1>${this.escapeHtml(chap.title)}</h1>
-    ${chap.content}
+    ${chap.content || ''}
 </body>
 </html>`;
 
@@ -676,7 +688,7 @@ img { max-width: 100%; height: auto; display: block; margin: 1rem auto; }
 `;
                     zip.file("OEBPS/style.css", styleCss);
 
-                    // 6. OEBPS/content.opf (修正 OPF 命名空間，確保相容 EPUB 閱讀器)
+                    // 6. OEBPS/content.opf
                     const bookTitle = this.dom.metaTitle.value || this.t('unnamedBook');
                     const bookAuthor = this.dom.metaAuthor.value || this.t('unknownAuthor');
                     const bookLang = this.dom.metaLang.value || 'zh-TW';
@@ -720,9 +732,10 @@ img { max-width: 100%; height: auto; display: block; margin: 1rem auto; }
                     const content = await zip.generateAsync({ type: "blob" });
                     const blobUrl = URL.createObjectURL(content);
                     
+                    const safeFileName = bookTitle.replace(/[^a-zA-Z0-9_\u4e00-\u9fa5]/g, '_');
                     const downloadAnchor = document.createElement('a');
                     downloadAnchor.href = blobUrl;
-                    downloadAnchor.download = `${bookTitle.replace(/[^a-zA-Z0-9_\u4e00-\u9fa5]/g, '_')}.epub`;
+                    downloadAnchor.download = `${safeFileName}.epub`;
                     document.body.appendChild(downloadAnchor);
                     downloadAnchor.click();
                     document.body.removeChild(downloadAnchor);
