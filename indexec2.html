@@ -274,7 +274,7 @@
                     }
                 });
 
-                // 排版按鈕事件（保留游標位置）
+                // 排版按鈕事件（精確保留游標與選取區位置）
                 this.btnTagP.addEventListener('click', () => this.wrapTextWithTag('<p>', '</p>'));
                 this.btnTagH2.addEventListener('click', () => this.wrapTextWithTag('<h2>', '</h2>'));
                 this.btnTagB.addEventListener('click', () => this.wrapTextWithTag('<b>', '</b>'));
@@ -381,7 +381,7 @@
 
                 ta.value = val.substring(0, start) + openTag + selectedText + closeTag + val.substring(end);
                 
-                const newCursorPos = start + openTag.length + selectedText.length + closeTag.length;
+                const newCursorPos = end + openTag.length + closeTag.length;
                 ta.focus();
                 ta.setSelectionRange(newCursorPos, newCursorPos);
                 
@@ -392,9 +392,10 @@
             insertAtCursor(text) {
                 const ta = this.currentChapterContentTextarea;
                 const start = ta.selectionStart;
+                const end = ta.selectionEnd;
                 const val = ta.value;
 
-                ta.value = val.substring(0, start) + text + val.substring(start);
+                ta.value = val.substring(0, start) + text + val.substring(end);
                 
                 const newCursorPos = start + text.length;
                 ta.focus();
@@ -437,7 +438,6 @@
                 `;
 
                 this.chapters.forEach((chap, idx) => {
-                    // 替換圖片路徑預覽（base64）
                     let content = chap.content || "";
                     for (const [filename, dataUrl] of Object.entries(this.images)) {
                         content = content.replaceAll(`images/${filename}`, dataUrl);
