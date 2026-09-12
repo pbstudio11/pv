@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>線上 EPUB 電子書製作與打包工坊（多章節版）</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"></link>
+    
+    <!-- JSZip -->
+    <script src="https://cdn.jsdelivr.net/npm/jszip/3.10.1/jszip.min.js"></script>
+
+    <style>
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 min-h-screen flex flex-col font-sans">
+
+    <!-- 頂部導覽列 -->
+    <header class="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-6 py-4 flex items-center justify-between shadow-sm sticky top-0 z-30">
+        <div class="flex items-center space-x-3">
+            <div class="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center shadow-md">
+                <i class="fa-solid fa-book-open-reader text-lg"></i>
+            </div>
+            <div>
+                <h1 class="font-bold text-lg leading-tight">EPUB 電子書製作工坊</h1>
+                <p class="text-xs text-slate-500 dark:text-slate-400">支援多章節、橫向排版與圖片嵌入</p>
+            </div>
+        </div>
+
+        <div class="flex items-center space-x-3">
+            <!-- 語言切換 -->
+            <select id="lang-select" class="text-xs bg-slate-100 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg px-2 py-1.5 focus:outline-none">
+                <option value="zh" selected>繁體中文</option>
+                <option value="en">English</option>
+                <option value="ja">日本語</option>
+            </select>
+
+            <button id="export-epub-btn" class="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold shadow-lg shadow-indigo-600/20 transition flex items-center space-x-2">
+                <i class="fa-solid fa-file-arrow-down"></i>
+                <span data-i18n="export_btn">打包下載 EPUB</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- 主要操作區 -->
+    <main class="flex-1 max-w-6xl w-full mx-auto p-6 grid grid-cols-1 md:grid-cols-12 gap-6">
+        
+        <!-- 左側：書籍設定與章節列表 (4格) -->
+        <div class="md:col-span-4 flex flex-col space-y-6">
+            <!-- 書籍基本設定 -->
+            <div class="bg-white dark:bg-slate-800 rounded-2xl p-5 border border-slate-200 dark:border-slate-700 shadow-sm space-y-4">
+                <h2 class="font-bold text-sm text-slate-700 dark:text-slate-300 flex items-center space-x-2 border-b pb-3 dark:border-slate-700">
+                    <i class="fa-solid fa-circle-info text-indigo-500"></i>
+                    <span data-i18n="book_meta">書籍基本設定</span>
+                </h2>
+                <div>
+                    <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1" data-i18n="book_title_label">書名 (Title)</label>
+                    <input type="text" id="meta-title" value="我的多章節讀本" class="w-full text-sm bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 focus:outline-none focus:border-indigo-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1" data-i18n="book_author_label">作者 (Author)</label>
+                    <input type="text" id="meta-author" value="作者名稱" class="w-full text-sm bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 focus:outline-none focus:border-indigo-500">
+                </div>
+            </div>
+
+            <!-- 章節管理區 -->
+            <div class="bg-white dark:bg-slate-800 rounded-2xl p-5 border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col space-y-3 flex-1">
+                <div class="flex items-center justify-between border-b pb-3 dark:border-slate-700">
+                    <h2 class="font-bold text-sm text-slate-700 dark:text-slate-300 flex items-center space-x-2">
+                        <i class="fa-solid fa-list text-indigo-500"></i>
+                        <span data-i18n="chapter_list">章節列表</span>
+                    </h2>
+                    <button id="add-chapter-btn" class="px-3 py-1.5 bg-indigo-50 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900 rounded-lg text-xs font-bold transition flex items-center space-x-1">
+                        <i class="fa-solid fa-plus"></i>
+                        <span data-i18n="add_chapter">新增章節</span>
+                    </button>
+                </div>
+                <div id="chapter-list-container" class="space-y-2 overflow-y-auto max-h-[300px] pr-1">
+                    <!-- 動態產生的章節列表 -->
+                </div>
+            </div>
+        </div>
+
+        <!-- 右側：當前章節標題與正文內容編輯 (8格) -->
+        <div class="md:col-span-8 bg-white dark:bg-slate-800 rounded-2xl p-6 border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col space-y-4">
+            <h2 class="font-bold text-sm text-slate-700 dark:text-slate-300 flex items-center space-x-2 border-b pb-3 dark:border-slate-700">
+                <i class="fa-solid fa-pen-nib text-indigo-500"></i>
+                <span data-i18n="current_chapter_edit">編輯當前章節內容</span>
+            </h2>
+
+            <div>
+                <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1" data-i18n="chapter_title_label">章節標題 (Heading)</label>
+                <input type="text" id="current-chapter-title" class="w-full font-bold text-base bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 focus:outline-none focus:border-indigo-500">
+            </div>
+
+            <!-- 排版工具列 -->
+            <div class="flex flex-wrap items-center gap-2 bg-slate-100 dark:bg-slate-900 p-2 rounded-xl border border-slate-200 dark:border-slate-700">
+                <button type="button" id="btn-tag-p" class="px-3 py-1.5 bg-white dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-xs rounded-lg font-medium border border-slate-200 dark:border-slate-700 shadow-sm transition">&lt;p&gt; 段落</button>
+                <button type="button" id="btn-tag-h2" class="px-3 py-1.5 bg-white dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-xs rounded-lg font-medium border border-slate-200 dark:border-slate-700 shadow-sm transition">&lt;h2&gt; 標題</button>
+                <button type="button" id="btn-tag-b" class="px-3 py-1.5 bg-white dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-xs rounded-lg font-bold border border-slate-200 dark:border-slate-700 shadow-sm transition">&lt;b&gt; 粗體</button>
+                <button type="button" id="btn-tag-br" class="px-3 py-1.5 bg-white dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-xs rounded-lg font-medium border border-slate-200 dark:border-slate-700 shadow-sm transition">&lt;br&gt; 空行</button>
+                <label class="px-3 py-1.5 bg-indigo-50 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900 text-xs rounded-lg font-bold cursor-pointer border border-indigo-200 dark:border-indigo-800 transition flex items-center space-x-1">
+                    <i class="fa-solid fa-image"></i>
+                    <span data-i18n="insert_image">插入圖片</span>
+                    <input type="file" id="image-upload-input" accept="image/*" class="hidden">
+                </label>
+            </div>
+
+            <div class="flex-1 flex flex-col">
+                <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1" data-i18n="chapter_content_label">正文內容 (支援 HTML 標籤)</label>
+                <textarea id="current-chapter-content" class="w-full h-64 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-4 text-sm font-mono focus:outline-none focus:border-indigo-500 leading-relaxed"></textarea>
+            </div>
+        </div>
+    </main>
+
+    <!-- Toast 訊息通知 -->
+    <div id="toast" class="fixed bottom-6 right-6 z-50 bg-slate-900/90 text-white px-4 py-3 rounded-xl shadow-2xl backdrop-blur-md flex items-center space-x-2 border border-slate-700 transition-all duration-300 transform translate-y-10 opacity-0 hidden">
+        <i class="fa-solid fa-circle-check text-emerald-400 text-lg"></i>
+        <span id="toast-msg" class="text-sm font-medium">通知</span>
+    </div>
+
+    <script>
+        const i18nDictionary = {
+            zh: {
+                export_btn: "打包下載 EPUB",
+                book_meta: "書籍基本設定",
+                book_title_label: "書名 (Title)",
+                book_author_label: "作者 (Author)",
+                chapter_list: "章節列表",
+                add_chapter: "新增章節",
+                current_chapter_edit: "編輯當前章節內容",
+                chapter_title_label: "章節標題 (Heading)",
+                chapter_content_label: "正文內容 (支援 HTML 標籤)",
+                insert_image: "插入圖片",
+                toast_success: "EPUB 打包成功，檔案已開始下載！",
+                toast_error: "打包發生錯誤，請檢查內容格式。",
+                toast_img_success: "圖片插入成功！",
+                toast_img_error: "圖片讀取失敗。",
+                default_chapter_title: "新章節"
+            },
+            en: {
+                export_btn: "Export EPUB",
+                book_meta: "Book Metadata",
+                book_title_label: "Title",
+                book_author_label: "Author",
+                chapter_list: "Chapters",
+                add_chapter: "Add Chapter",
+                current_chapter_edit: "Edit Chapter Content",
+                chapter_title_label: "Chapter Title",
+                chapter_content_label: "Content (HTML Supported)",
+                insert_image: "Insert Image",
+                toast_success: "EPUB generated and downloaded successfully!",
+                toast_error: "Generation error, please check format.",
+                toast_img_success: "Image inserted successfully!",
+                toast_img_error: "Failed to read image.",
+                default_chapter_title: "New Chapter"
+            },
+            ja: {
+                export_btn: "EPUBをダウンロード",
+                book_meta: "書籍設定",
+                book_title_label: "タイトル",
+                book_author_label: "著者",
+                chapter_list: "チャプター一覧",
+                add_chapter: "チャプター追加",
+                current_chapter_edit: "チャプター編集",
+                chapter_title_label: "チャプタータイトル",
+                chapter_content_label: "本文 (HTML対応)",
+                insert_image: "画像挿入",
+                toast_success: "EPUBの作成とダウンロードが完了しました！",
+                toast_error: "エラーが発生しました。内容を確認してください。",
+                toast_img_success: "画像の挿入に成功しました！",
+                toast_img_error: "画像の読み込みに失敗しました。",
+                default_chapter_title: "新しいチャプター"
+            }
+        };
+
+        class MultiChapterEpubBuilder {
+            constructor() {
+                this.chapters = [
+                    { id: 1, title: "第一章：導言", content: "<p>這是第一章的內容。您可以自由編輯、新增更多章節或插入圖片。</p>" },
+                    { id: 2, title: "第二章：正文內容", content: "<p>這是第二章的內容。點擊右上角的打包下載即可產生成品！</p>" }
+                ];
+                this.currentChapterId = 1;
+                this.images = {}; // 儲存上傳的圖片 { filename: base64Data }
+
+                this.initElements();
+                this.initEvents();
+                this.renderLanguage();
+                this.renderChapterList();
+                this.loadCurrentChapterToEditor();
+            }
+
+            initElements() {
+                this.exportBtn = document.getElementById('export-epub-btn');
+                this.metaTitle = document.getElementById('meta-title');
+                this.metaAuthor = document.getElementById('meta-author');
+                this.chapterListContainer = document.getElementById('chapter-list-container');
+                this.addChapterBtn = document.getElementById('add-chapter-btn');
+                this.currentChapterTitleInput = document.getElementById('current-chapter-title');
+                this.currentChapterContentTextarea = document.getElementById('current-chapter-content');
+                this.langSelect = document.getElementById('lang-select');
+                this.toast = document.getElementById('toast');
+                this.toastMsg = document.getElementById('toast-msg');
+
+                this.btnTagP = document.getElementById('btn-tag-p');
+                this.btnTagH2 = document.getElementById('btn-tag-h2');
+                this.btnTagB = document.getElementById('btn-tag-b');
+                this.btnTagBr = document.getElementById('btn-tag-br');
+                this.imageUploadInput = document.getElementById('image-upload-input');
+            }
+
+            initEvents() {
+                this.exportBtn.addEventListener('click', () => this.generateEpub());
+                this.addChapterBtn.addEventListener('click', () => this.addChapter());
+                this.langSelect.addEventListener('change', () => this.renderLanguage());
+
+                // 即時同步編輯內容至目前章節
+                this.currentChapterTitleInput.addEventListener('input', () => {
+                    const chap = this.chapters.find(c => c.id === this.currentChapterId);
+                    if (chap) {
+                        chap.title = this.currentChapterTitleInput.value;
+                        this.renderChapterList();
+                    }
+                });
+
+                this.currentChapterContentTextarea.addEventListener('input', () => {
+                    const chap = this.chapters.find(c => c.id === this.currentChapterId);
+                    if (chap) {
+                        chap.content = this.currentChapterContentTextarea.value;
+                    }
+                });
+
+                // 排版按鈕事件
+                this.btnTagP.addEventListener('click', () => this.wrapTextWithTag('<p>', '</p>'));
+                this.btnTagH2.addEventListener('click', () => this.wrapTextWithTag('<h2>', '</h2>'));
+                this.btnTagB.addEventListener('click', () => this.wrapTextWithTag('<b>', '</b>'));
+                this.btnTagBr.addEventListener('click', () => this.insertAtCursor('<br/>\n'));
+                this.imageUploadInput.addEventListener('change', (e) => this.handleImageUpload(e));
+            }
+
+            getCurrentLangText(key) {
+                const lang = this.langSelect.value;
+                return i18nDictionary[lang][key] || i18nDictionary['zh'][key];
+            }
+
+            renderLanguage() {
+                const lang = this.langSelect.value;
+                const dict = i18nDictionary[lang] || i18nDictionary['zh'];
+                document.querySelectorAll('[data-i18n]').forEach(el => {
+                    const key = el.getAttribute('data-i18n');
+                    if (dict[key]) el.textContent = dict[key];
+                });
+            }
+
+            showToast(msg) {
+                this.toastMsg.textContent = msg;
+                this.toast.classList.remove('hidden', 'translate-y-10', 'opacity-0');
+                setTimeout(() => {
+                    this.toast.classList.add('translate-y-10', 'opacity-0');
+                    setTimeout(() => this.toast.classList.add('hidden'), 300);
+                }, 3000);
+            }
+
+            renderChapterList() {
+                this.chapterListContainer.innerHTML = '';
+                this.chapters.forEach((chap, index) => {
+                    const div = document.createElement('div');
+                    div.className = `flex items-center justify-between p-2.5 rounded-xl border text-xs cursor-pointer transition ${
+                        chap.id === this.currentChapterId 
+                            ? 'bg-indigo-50 dark:bg-indigo-900/30 border-indigo-300 dark:border-indigo-600 font-bold text-indigo-600 dark:text-indigo-400' 
+                            : 'bg-slate-50 dark:bg-slate-900 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800'
+                    }`;
+                    div.innerHTML = `
+                        <div class="flex items-center space-x-2 truncate flex-1">
+                            <i class="fa-solid fa-file-lines text-slate-400"></i>
+                            <span class="truncate">${index + 1}. ${chap.title || '無標題'}</span>
+                        </div>
+                        <div class="flex items-center space-x-1 ml-2">
+                            <button type="button" class="del-btn p-1 text-slate-400 hover:text-red-500 rounded" title="刪除">
+                                <i class="fa-solid fa-trash-can"></i>
+                            </button>
+                        </div>
+                    `;
+
+                    div.addEventListener('click', (e) => {
+                        if (e.target.closest('.del-btn')) {
+                            this.deleteChapter(chap.id);
+                        } else {
+                            this.switchChapter(chap.id);
+                        }
+                    });
+
+                    this.chapterListContainer.appendChild(div);
+                });
+            }
+
+            switchChapter(id) {
+                this.currentChapterId = id;
+                this.loadCurrentChapterToEditor();
+                this.renderChapterList();
+            }
+
+            loadCurrentChapterToEditor() {
+                const chap = this.chapters.find(c => c.id === this.currentChapterId);
+                if (chap) {
+                    this.currentChapterTitleInput.value = chap.title;
+                    this.currentChapterContentTextarea.value = chap.content;
+                }
+            }
+
+            addChapter() {
+                const newId = this.chapters.length > 0 ? Math.max(...this.chapters.map(c => c.id)) + 1 : 1;
+                const newTitle = `${this.getCurrentLangText('default_chapter_title')} ${newId}`;
+                this.chapters.push({ id: newId, title: newTitle, content: '<p>新章節內容...</p>' });
+                this.switchChapter(newId);
+            }
+
+            deleteChapter(id) {
+                if (this.chapters.length <= 1) {
+                    this.showToast("至少需要保留一個章節！");
+                    return;
+                }
+                this.chapters = this.chapters.filter(c => c.id !== id);
+                if (this.currentChapterId === id) {
+                    this.currentChapterId = this.chapters[0].id;
+                }
+                this.renderChapterList();
+                this.loadCurrentChapterToEditor();
+            }
+
+            wrapTextWithTag(openTag, closeTag) {
+                const ta = this.currentChapterContentTextarea;
+                const start = ta.selectionStart;
+                const end = ta.selectionEnd;
+                const val = ta.value;
+                const selectedText = val.substring(start, end);
+
+                ta.value = val.substring(0, start) + openTag + selectedText + closeTag + val.substring(end);
+                ta.focus();
+                ta.setSelectionRange(start + openTag.length, end + openTag.length);
+                
+                const chap = this.chapters.find(c => c.id === this.currentChapterId);
+                if (chap) chap.content = ta.value;
+            }
+
+            insertAtCursor(text) {
+                const ta = this.currentChapterContentTextarea;
+                const start = ta.selectionStart;
+                const val = ta.value;
+
+                ta.value = val.substring(0, start) + text + val.substring(start);
+                ta.focus();
+                ta.setSelectionRange(start + text.length, start + text.length);
+
+                const chap = this.chapters.find(c => c.id === this.currentChapterId);
+                if (chap) chap.content = ta.value;
+            }
+
+            handleImageUpload(e) {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    const base64Data = event.target.result;
+                    const filename = `img_${Date.now()}_${file.name.replace(/[^a-zA-Z0-9_.-]/g, '_')}`;
+                    this.images[filename] = base64Data;
+
+                    // 在游標處插入 XHTML 圖片標籤
+                    const imgTag = `<div style="text-align:center; margin: 1.5rem 0;"><img src="images/${filename}" alt="image" style="max-width:100%; height:auto; border-radius:8px;" /></div>\n`;
+                    this.insertAtCursor(imgTag);
+                    this.showToast(this.getCurrentLangText('toast_img_success'));
+                    this.imageUploadInput.value = '';
+                };
+                reader.onerror = () => {
+                    this.showToast(this.getCurrentLangText('toast_img_error'));
+                };
+                reader.readAsDataURL(file);
+            }
+
+            escapeHtml(str) {
+                return str.replace(/[&<>"']/g, (m) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[m]));
+            }
+
+            async generateEpub() {
+                try {
+                    this.showToast("正在建立標準橫向 EPUB 檔案...");
+                    const zip = new JSZip();
+
+                    // 1. mimetype (必須為第一個且無壓縮)
+                    zip.file("mimetype", "application/epub+zip", { compression: "STORE" });
+
+                    // 2. META-INF/container.xml
+                    zip.file("META-INF/container.xml", `<?xml version="1.0" encoding="UTF-8"?>
+<container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container">
+    <rootfiles>
+        <rootfile full-path="OEBPS/content.opf" media-type="application/oebps-package+xml"/>
+    </rootfiles>
+</container>`);
+
+                    // 3. OEBPS/style.css (橫向讀本專用排版)
+                    zip.file("OEBPS/style.css", `
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; line-height: 1.8; padding: 2rem; color: #222; direction: ltr; }
+h1 { font-size: 1.8rem; color: #4f46e5; border-bottom: 2px solid #e0e7ff; padding-bottom: 0.5rem; margin-bottom: 1.5rem; }
+h2 { font-size: 1.4rem; color: #4338ca; margin-top: 1.5rem; margin-bottom: 0.8rem; }
+p { margin-bottom: 1.2rem; text-align: justify; }
+img { max-width: 100%; height: auto; }
+`);
+
+                    // 4. 寫入圖片資源 (如有)
+                    const imageManifestItems = [];
+                    for (const [filename, dataUrl] of Object.entries(this.images)) {
+                        // 轉換 Base64 為二進位
+                        const base64Parts = dataUrl.split(',');
+                        const mimeType = base64Parts[0].match(/:(.*?);/)[1];
+                        const base64Data = base64Parts[1];
+                        zip.file(`OEBPS/images/${filename}`, base64Data, { base64: true });
+                        imageManifestItems.push({ filename, mimeType });
+                    }
+
+                    // 5. 產生各章節 XHTML 檔案
+                    const manifestItems = [];
+                    const spineItems = [];
+                    const ncxNavPoints = [];
+
+                    this.chapters.forEach((chap, idx) => {
+                        const chapterIndex = idx + 1;
+                        const fileName = `chapter${chapterIndex}.xhtml`;
+                        const itemId = `chap${chapterIndex}`;
+                        const headingText = this.escapeHtml(chap.title || `第 ${chapterIndex} 章`);
+                        const bodyContent = chap.content || "";
+
+                        const xhtmlContent = `<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="zh-TW" xml:lang="zh-TW">
+<head>
+    <title>${headingText}</title>
+    <link rel="stylesheet" href="style.css" type="text/css"/>
+</head>
+<body>
+    <h1>${headingText}</h1>
+    ${bodyContent}
+</body>
+</html>`;
+
+                        zip.file(`OEBPS/${fileName}`, xhtmlContent);
+
+                        manifestItems.push(`<item id="${itemId}" href="${fileName}" media-type="application/xhtml+xml"/>`);
+                        spineItems.push(`<itemref idref="${itemId}"/>`);
+                        ncxNavPoints.push(`
+        <navPoint id="navPoint-${chapterIndex}" playOrder="${chapterIndex}">
+            <navLabel><text>${headingText}</text></navLabel>
+            <content src="${fileName}"/>
+        </navPoint>`);
+                    });
+
+                    // 附加圖片至 manifest
+                    imageManifestItems.forEach((img, idx) => {
+                        manifestItems.push(`<item id="img_${idx}" href="images/${img.filename}" media-type="${img.mimeType}"/>`);
+                    });
+
+                    const titleText = this.escapeHtml(this.metaTitle.value || "我的多章節讀本");
+                    const authorText = this.escapeHtml(this.metaAuthor.value || "作者名稱");
+                    const uuid = 'urn:uuid:' + 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+                        const r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+                        return v.toString(16);
+                    });
+
+                    // 6. OEBPS/toc.ncx
+                    zip.file("OEBPS/toc.ncx", `<?xml version="1.0" encoding="UTF-8"?>
+<ncx xmlns="http://www.daisy.org/z3986/2005/ncx/" version="2005-1">
+    <head>
+        <meta name="dtb:uid" content="${uuid}"/>
+        <meta name="dtb:depth" content="1"/>
+        <meta name="dtb:totalPageCount" content="0"/>
+        <meta name="dtb:maxPageNoframes" content="0"/>
+    </head>
+    <docTitle><text>${titleText}</text></docTitle>
+    <navMap>
+        ${ncxNavPoints.join('')}
+    </navMap>
+</ncx>`);
+
+                    // 7. OEBPS/content.opf
+                    zip.file("OEBPS/content.opf", `<?xml version="1.0" encoding="UTF-8"?>
+<package xmlns="http://www.idpf.org/2007/opf" unique-id="BookId" version="3.0" dir="ltr">
+    <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
+        <dc:title>${titleText}</dc:title>
+        <dc:creator>${authorText}</dc:creator>
+        <dc:language>zh-TW</dc:language>
+        <dc:identifier id="BookId">${uuid}</dc:identifier>
+        <meta property="dcterms:modified">${new Date().toISOString().split('.')[0]+'Z'}</meta>
+    </metadata>
+    <manifest>
+        <item id="ncx" href="toc.ncx" media-type="application/x-dtbncx+xml"/>
+        <item id="style" href="style.css" media-type="text/css"/>
+        ${manifestItems.join('\n        ')}
+    </manifest>
+    <spine toc="ncx" page-progression-direction="ltr">
+        ${spineItems.join('\n        ')}
+    </spine>
+</package>`);
+
+                    // 8. 產生 Blob 下載
+                    const content = await zip.generateAsync({ type: "blob", mimeType: "application/epub+zip" });
+                    
+                    const safeName = (this.metaTitle.value || "book").replace(/[^a-zA-Z0-9_\u4e00-\u9fa5]/g, '_');
+                    const url = URL.createObjectURL(content);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `${safeName}.epub`;
+                    document.body.appendChild(a);
+                    a.click();
+                    setTimeout(() => {
+                        document.body.removeChild(a);
+                        URL.revokeObjectURL(url);
+                    }, 1000);
+
+                    this.showToast(this.getCurrentLangText('toast_success'));
+                } catch (err) {
+                    console.error(err);
+                    this.showToast(this.getCurrentLangText('toast_error'));
+                }
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            new MultiChapterEpubBuilder();
+        });
+    </script>
+</body>
+</html>
