@@ -1,0 +1,495 @@
+
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DocView - Word Preview</title>
+
+<!-- DOCX parser -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.13.0/mammoth.browser.min.js"></script>
+
+<!-- Legacy DOC parser -->
+<script src="https://raw.githubusercontent.com/Alpaq92/JSDoc/main/src/docToText.js"></script>
+
+<!-- HTML sanitizer -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.3.1/purify.min.js"></script>
+
+<style>
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: #f1f3f6;
+  color: #222;
+  font-family: Arial, "Microsoft JhengHei",
+    "Noto Sans CJK TC", "PingFang TC", sans-serif;
+}
+
+header {
+  background: #fff;
+  padding: 17px 25px;
+  border-bottom: 1px solid #ddd;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+header h1 {
+  font-size: 21px;
+  margin: 0;
+}
+
+header span {
+  color: #777;
+  font-size: 12px;
+}
+
+.container {
+  max-width: 1050px;
+  margin: 30px auto;
+  padding: 0 16px;
+}
+
+.upload {
+  background: white;
+  border: 2px dashed #b8c2d0;
+  border-radius: 12px;
+  padding: 38px 15px;
+  text-align: center;
+  cursor: pointer;
+  transition: .2s;
+}
+
+.upload:hover, .upload.drag {
+  border-color: #2878db;
+  background: #f5f9ff;
+}
+
+.upload .symbol {
+  font-size: 40px;
+  margin-bottom: 10px;
+}
+
+.upload h2 {
+  font-size: 18px;
+  margin: 5px;
+}
+
+.upload p {
+  color: #888;
+  font-size: 13px;
+}
+
+button {
+  background: #2878db;
+  border: 0;
+  color: white;
+  padding: 10px 20px;
+  border-radius: 7px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+button:hover {
+  background: #1764c0;
+}
+
+.toolbar {
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 22px;
+  padding: 12px 16px;
+  background: white;
+  border: 1px solid #e1e4e8;
+  border-radius: 9px;
+}
+
+.filename {
+  font-size: 13px;
+  color: #555;
+  overflow-wrap: anywhere;
+}
+
+.status {
+  font-size: 13px;
+  color: #777;
+  margin: 14px 2px;
+}
+
+.paper {
+  display: none;
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+  min-height: 500px;
+  padding: 55px 65px;
+  margin: 15px auto 50px;
+  box-shadow: 0 3px 15px rgba(0,0,0,.06);
+  overflow-x: auto;
+  color: #222;
+  font-family: Arial, "Microsoft JhengHei",
+    "Noto Sans CJK TC", "PingFang TC", sans-serif;
+  font-size: 15px;
+  line-height: 1.8;
+  overflow-wrap: anywhere;
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+.paper p {
+  margin: 0 0 12px;
+}
+
+.paper h1, .paper h2, .paper h3 {
+  margin: 20px 0 12px;
+  line-height: 1.4;
+}
+
+.paper table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 15px 0;
+  font-size: inherit;
+}
+
+.paper td, .paper th {
+  border: 1px solid #888;
+  padding: 7px 10px;
+  vertical-align: top;
+  min-width: 35px;
+}
+
+.paper th {
+  background: #f0f0f0;
+}
+
+.paper img {
+  max-width: 100%;
+  height: auto;
+}
+
+.paper ul, .paper ol {
+  padding-left: 28px;
+}
+
+.paper a {
+  color: #1764c0;
+}
+
+.paper pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.paper .doc-content {
+  white-space: pre-wrap;
+}
+
+.paper [style*="page-break"] {
+  page-break-after: always;
+}
+
+.empty {
+  text-align: center;
+  color: #aaa;
+  padding: 65px 10px;
+}
+
+#fileInput {
+  display: none;
+}
+
+#zoom {
+  width: 75px;
+  padding: 7px;
+  border: 1px solid #ddd;
+  border-radius: 5px;
+}
+
+footer {
+  text-align: center;
+  color: #999;
+  font-size: 12px;
+  padding: 15px;
+}
+
+@media(max-width:600px) {
+  .paper {
+    padding: 25px 17px;
+  }
+  .container {
+    margin-top: 18px;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<header>
+  <h1>📄 DocView</h1>
+  <span>DOC / DOCX Preview</span>
+</header>
+
+<div class="container">
+
+  <div class="upload" id="dropArea">
+    <div class="symbol">📁</div>
+    <h2>開啟 Word 文件</h2>
+    <p>支援 DOC 及 DOCX 格式</p>
+    <button type="button" id="browseBtn">選擇文件</button>
+    <p>文件只會喺你嘅瀏覽器處理，不會上傳</p>
+  </div>
+
+  <input type="file" id="fileInput"
+    accept=".doc,.docx,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document">
+
+  <div class="toolbar" id="toolbar">
+    <div class="filename" id="filename"></div>
+    <div>
+      <button id="copyBtn">📋 Copy 全文</button>
+      <button id="clearBtn" style="background:#777">清除</button>
+    </div>
+  </div>
+
+  <div class="status" id="status">
+    等待開啟文件...
+  </div>
+
+  <div class="toolbar" id="viewToolbar">
+    <span>文件預覽</span>
+    <div>
+      <button id="zoomOut" style="padding:6px 12px">−</button>
+      <input id="zoom" type="text" value="100%" readonly>
+      <button id="zoomIn" style="padding:6px 12px">+</button>
+      <button id="zoomReset" style="background:#777;padding:6px 12px">重設</button>
+    </div>
+  </div>
+
+  <div class="paper" id="preview">
+    <div class="empty">
+      請選擇 DOC 或 DOCX 文件開始預覽
+    </div>
+  </div>
+
+</div>
+
+<footer>
+  DocView · Local Document Preview · No Upload
+</footer>
+
+<script>
+const fileInput = document.getElementById("fileInput");
+const dropArea = document.getElementById("dropArea");
+const preview = document.getElementById("preview");
+const statusBox = document.getElementById("status");
+const toolbar = document.getElementById("toolbar");
+const viewToolbar = document.getElementById("viewToolbar");
+const filename = document.getElementById("filename");
+
+let currentZoom = 100;
+let currentText = "";
+
+document.getElementById("browseBtn").onclick = () => {
+  fileInput.click();
+};
+
+dropArea.addEventListener("click", e => {
+  if (e.target.tagName !== "BUTTON") {
+    fileInput.click();
+  }
+});
+
+fileInput.addEventListener("change", e => {
+  if (e.target.files.length) {
+    loadFile(e.target.files[0]);
+  }
+});
+
+["dragenter", "dragover"].forEach(event => {
+  dropArea.addEventListener(event, e => {
+    e.preventDefault();
+    dropArea.classList.add("drag");
+  });
+});
+
+["dragleave", "drop"].forEach(event => {
+  dropArea.addEventListener(event, e => {
+    e.preventDefault();
+    dropArea.classList.remove("drag");
+  });
+});
+
+dropArea.addEventListener("drop", e => {
+  const file = e.dataTransfer.files[0];
+  if (file) loadFile(file);
+});
+
+function showError(message) {
+  statusBox.textContent = message;
+  preview.style.display = "block";
+  preview.textContent = message;
+}
+
+async function loadFile(file) {
+  const ext = file.name.split(".").pop().toLowerCase();
+
+  if (!["doc", "docx"].includes(ext)) {
+    alert("只支援 DOC / DOCX 文件");
+    return;
+  }
+
+  filename.textContent = "📄 " + file.name;
+  statusBox.textContent = "正在讀取文件...";
+  preview.innerHTML = "";
+  preview.style.display = "block";
+  toolbar.style.display = "flex";
+  viewToolbar.style.display = "flex";
+
+  currentText = "";
+
+  try {
+    const buffer = await file.arrayBuffer();
+    let html = "";
+
+    if (ext === "docx") {
+      if (!window.mammoth) {
+        throw new Error("DOCX 程式庫未能載入，請檢查網絡");
+      }
+
+      statusBox.textContent = "正在解析 DOCX...";
+
+      const result = await mammoth.convertToHtml(
+        { arrayBuffer: buffer },
+        {
+          includeDefaultStyleMap: true
+        }
+      );
+
+      html = result.value;
+
+      if (result.messages.length) {
+        console.warn("DOCX conversion messages:", result.messages);
+      }
+
+    } else {
+      if (!window.docToText) {
+        throw new Error("DOC 程式庫未能載入，請檢查網絡");
+      }
+
+      statusBox.textContent = "正在解析舊版 DOC...";
+
+      const result = docToText.html(buffer);
+
+      if (!result || result.body == null) {
+        throw new Error(
+          "無法讀取此 DOC 文件。可能是加密、損壞或較舊版本格式。"
+        );
+      }
+
+      // Legacy DOC parser returns styled HTML with tabs/newlines.
+      html = '<div class="doc-content">' + result.body + '</div>';
+    }
+
+    // Sanitize generated HTML before inserting it.
+    if (!window.DOMPurify) {
+      throw new Error("安全清理程式庫未能載入");
+    }
+
+    const clean = DOMPurify.sanitize(html, {
+      USE_PROFILES: { html: true },
+      ADD_ATTR: ["style", "colspan", "rowspan"]
+    });
+
+    preview.innerHTML = clean;
+
+    currentText = preview.innerText || preview.textContent || "";
+
+    if (!currentText.trim()) {
+      preview.innerHTML = "<p>文件內沒有可顯示的文字。</p>";
+    }
+
+    statusBox.textContent =
+      "完成 · " + ext.toUpperCase() +
+      " · " + currentText.length.toLocaleString() + " 個文字字元";
+
+    currentZoom = 100;
+    applyZoom();
+
+  } catch (error) {
+    console.error(error);
+    showError("開啟失敗：" + error.message);
+  }
+}
+
+// Copy all document text
+document.getElementById("copyBtn").addEventListener("click", async () => {
+  const text = preview.innerText || "";
+
+  if (!text.trim()) {
+    alert("沒有文字可以複製");
+    return;
+  }
+
+  try {
+    await navigator.clipboard.writeText(text);
+    statusBox.textContent = "✓ 全文已複製";
+  } catch (error) {
+    // Fallback for browsers without Clipboard API permission
+    const textarea = document.createElement("textarea");
+    textarea.value = text;
+    document.body.appendChild(textarea);
+    textarea.select();
+
+    try {
+      document.execCommand("copy");
+      statusBox.textContent = "✓ 全文已複製";
+    } catch (e) {
+      alert("複製失敗，請直接選取文字並按 Ctrl+C");
+    }
+
+    textarea.remove();
+  }
+});
+
+// Zoom
+function applyZoom() {
+  preview.style.fontSize = (15 * currentZoom / 100) + "px";
+  document.getElementById("zoom").value = currentZoom + "%";
+}
+
+document.getElementById("zoomIn").onclick = () => {
+  currentZoom = Math.min(200, currentZoom + 10);
+  applyZoom();
+};
+
+document.getElementById("zoomOut").onclick = () => {
+  currentZoom = Math.max(50, currentZoom - 10);
+  applyZoom();
+};
+
+document.getElementById("zoomReset").onclick = () => {
+  currentZoom = 100;
+  applyZoom();
+};
+
+// Clear
+document.getElementById("clearBtn").onclick = () => {
+  fileInput.value = "";
+  preview.innerHTML =
+    '<div class="empty">請選擇 DOC 或 DOCX 文件開始預覽</div>';
+  preview.style.display = "block";
+  toolbar.style.display = "none";
+  viewToolbar.style.display = "none";
+  statusBox.textContent = "等待開啟文件...";
+  filename.textContent = "";
+  currentText = "";
+};
+</script>
+
+</body>
+</html>
