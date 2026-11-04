@@ -4,12 +4,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Word 文件閱讀器 5.2</title>
+<title>Word 文件閱讀器 6.0</title>
 
 <!-- DOCX 排版引擎 -->
 <script src="https://cdn.jsdelivr.net/npm/docx-preview@0.3.6/dist/docx-preview.min.js"></script>
 
-<!-- 舊版 DOC 本機解析器：無 TOKEN、無上傳 -->
+<!-- 舊版 DOC 專用解析器 -->
 <script src="https://cdn.jsdelivr.net/gh/Alpaq92/JSDoc@main/src/docToText.js"></script>
 
 <style>
@@ -68,7 +68,7 @@ button:disabled{opacity:.5;cursor:not-allowed}
 
 main{
  padding:20px;
- max-width:1200px;
+ max-width:1400px;
  margin:auto;
 }
 
@@ -108,10 +108,12 @@ main{
 #paper{
  display:none;
  background:#cbd5e1;
- padding:25px 10px;
- min-height:70vh;
+ padding:30px 12px;
+ min-height:80vh;
  overflow:auto;
 }
+
+/* 文件顯示 */
 
 #viewer{
  width:100%;
@@ -126,11 +128,11 @@ main{
 }
 
 #viewer .docx{
- margin:0 auto 20px;
+ margin:0 auto 25px;
  box-shadow:0 3px 15px #0002;
 }
 
-/* 舊 DOC 格式化文件 */
+/* DOC 舊版 Word */
 
 .doc-html{
  background:white;
@@ -141,42 +143,135 @@ main{
  margin:auto;
  overflow-x:auto;
  line-height:1.7;
- overflow-wrap:anywhere;
+ overflow-wrap:break-word;
+ font-family:"Times New Roman","Microsoft JhengHei",Arial,sans-serif;
+ font-size:16px;
 }
 
-/* 舊 DOC 表格：保留原有結構及基本邊框 */
+/* 段落 */
+
+.doc-html p{
+ margin-top:0;
+ margin-bottom:8px;
+ line-height:1.7;
+}
+
+/* 標題 */
+
+.doc-html h1{
+ font-size:26px;
+ margin:20px 0 15px;
+}
+
+.doc-html h2{
+ font-size:22px;
+ margin:18px 0 12px;
+}
+
+.doc-html h3{
+ font-size:19px;
+ margin:15px 0 10px;
+}
+
+/* 字體格式 */
+
+.doc-html strong,
+.doc-html b{
+ font-weight:bold;
+}
+
+.doc-html em,
+.doc-html i{
+ font-style:italic;
+}
+
+.doc-html u{
+ text-decoration:underline;
+}
+
+.doc-html s,
+.doc-html strike{
+ text-decoration:line-through;
+}
+
+.doc-html sup{
+ vertical-align:super;
+ font-size:smaller;
+}
+
+.doc-html sub{
+ vertical-align:sub;
+ font-size:smaller;
+}
+
+/* 表格：保留原有格式 */
 
 .doc-html table{
  border-collapse:collapse;
  border-spacing:0;
  max-width:100%;
  margin:12px 0;
+ table-layout:auto;
 }
 
 .doc-html td,
 .doc-html th{
- border:1px solid #999;
  padding:5px 8px;
  vertical-align:top;
  min-width:25px;
+}
+
+.doc-html td p,
+.doc-html th p{
+ margin:0 0 5px;
 }
 
 .doc-html tr{
  page-break-inside:avoid;
 }
 
-.doc-html p{
- margin-top:0;
- margin-bottom:6px;
-}
+/* 圖片 */
 
 .doc-html img{
  max-width:100%;
  height:auto;
+ object-fit:contain;
 }
 
 .doc-html table img{
  max-width:100%;
+}
+
+/* 連結 */
+
+.doc-html a{
+ color:#2563eb;
+ text-decoration:underline;
+}
+
+/* 清單 */
+
+.doc-html ul,
+.doc-html ol{
+ padding-left:35px;
+}
+
+.doc-html li{
+ margin-bottom:4px;
+}
+
+/* 引用及分隔線 */
+
+.doc-html blockquote{
+ margin:15px 25px;
+ padding-left:15px;
+ border-left:3px solid #94a3b8;
+}
+
+.doc-html hr{
+ border:0;
+ border-top:1px solid #999;
+ margin:20px 0;
 }
 
 /* 搜尋結果 */
@@ -184,7 +279,6 @@ main{
 mark{
  background:#fde047 !important;
  color:#111 !important;
- outline:none;
 }
 
 mark.active{
@@ -218,6 +312,10 @@ mark.active{
  border-color:#64748b;
 }
 
+.dark .doc-html a{
+ color:#93c5fd;
+}
+
 .dark .toolbar input{
  background:#334155;
  color:white;
@@ -234,14 +332,35 @@ mark.active{
  color:#111 !important;
 }
 
-@media(max-width:600px){
+@media(max-width:700px){
+
  header{padding:12px}
  h1{font-size:16px}
+
  main{padding:10px}
+
  #paper{padding:10px 3px}
+
  .toolbar{gap:6px}
- .toolbar input{min-width:130px}
- .doc-html{padding:15px}
+
+ .toolbar input{
+  min-width:120px;
+  flex:1;
+ }
+
+ .toolbar button{
+  padding:9px 11px;
+ }
+
+ .doc-html{
+  padding:15px;
+  font-size:14px;
+ }
+
+ .doc-html table{
+  font-size:13px;
+ }
+
 }
 </style>
 </head>
@@ -250,8 +369,8 @@ mark.active{
 
 <header>
  <div>
-  <h1>📄 Word 文件閱讀器 5.2</h1>
-  <small>DOC / DOCX · 表格排版閱讀</small>
+  <h1>📄 Word 文件閱讀器 6.0</h1>
+  <small>DOC / DOCX · 完整格式閱讀</small>
  </div>
  <button id="themeBtn">🌙</button>
 </header>
@@ -273,8 +392,11 @@ mark.active{
 <input type="file" id="fileInput" accept=".doc,.docx">
 
 <div id="dropzone">
+
  <div style="font-size:50px">📂</div>
+
  <h2>開啟 Word 文件</h2>
+
  <p>選擇 DOC 或 DOCX 文件，或直接拖放到這裡。</p>
 
  <label for="fileInput" class="upload">
@@ -282,10 +404,11 @@ mark.active{
  </label>
 
  <p style="font-size:12px;color:#94a3b8;margin-top:20px">
- DOCX：保留大部分 Word 排版<br>
- DOC：支援表格及基本格式還原<br>
+ DOCX：Word 頁面及格式還原<br>
+ DOC：舊版 Word 格式、表格及文字解析<br>
  文件只在瀏覽器本機處理，不會上傳
  </p>
+
 </div>
 
 <div id="loading">⏳ 正在讀取文件...</div>
@@ -307,18 +430,18 @@ const input=$('fileInput');
 const drop=$('dropzone');
 const viewer=$('viewer');
 
-let fullText='';
 let zoom=100;
 let matches=[];
 let current=-1;
 let busy=false;
-let plainMode=false;
 
-/* 基本訊息 */
+/* 訊息 */
 
 function message(text){
  $('message').textContent=text;
 }
+
+/* 搜尋重設 */
 
 function resetSearch(){
  matches=[];
@@ -338,7 +461,7 @@ function removeMarks(){
  resetSearch();
 }
 
-/* 取得全文 */
+/* 全文 */
 
 function getText(){
  return viewer.innerText || viewer.textContent || '';
@@ -349,7 +472,6 @@ function getText(){
 function updateZoom(){
 
  viewer.style.zoom=zoom/100;
-
  $('zoom').textContent=zoom+'%';
 }
 
@@ -363,7 +485,7 @@ $('smaller').onclick=()=>{
  updateZoom();
 };
 
-/* 從 JSDoc HTML 結果取得正文 */
+/* 取得 DOC HTML */
 
 function getDocHtml(result){
 
@@ -375,30 +497,50 @@ function getDocHtml(result){
   return '';
  }
 
- if(typeof result.body==='string'){
-  return result.body;
- }
+ const keys=[
+  'body',
+  'html',
+  'document',
+  'content'
+ ];
 
- if(typeof result.html==='string'){
-  return result.html;
- }
+ for(const key of keys){
 
- if(typeof result.body?.html==='string'){
-  return result.body.html;
- }
+  if(typeof result[key]==='string'){
+   return result[key];
+  }
 
- if(typeof result.document==='string'){
-  return result.document;
  }
 
  return '';
 }
 
-/* 載入檔案 */
+/* 檢查 DOC 解析器 */
+
+function checkDocEngine(){
+
+ if(typeof window.docToText!=='function'){
+  throw new Error(
+   'DOC 舊版解析器未能載入，請檢查網絡或 CDN。'
+  );
+ }
+
+ if(typeof window.docToText.html!=='function'){
+  throw new Error(
+   'DOC 解析器不支援 HTML 格式輸出。'
+  );
+ }
+
+}
+
+/* 載入文件 */
 
 input.addEventListener('change',()=>{
+
  const file=input.files[0];
+
  if(file)openFile(file);
+
 });
 
 async function openFile(file){
@@ -428,9 +570,6 @@ async function openFile(file){
  viewer.innerHTML='';
  viewer.style.zoom='1';
 
- fullText='';
- plainMode=false;
-
  resetSearch();
 
  message('正在讀取 '+file.name+'...');
@@ -448,10 +587,10 @@ async function openFile(file){
    message('正在還原 DOCX Word 排版...');
 
    if(!window.docx || !docx.renderAsync){
-    throw new Error('DOCX 排版引擎未能載入，請檢查網絡。');
+    throw new Error(
+     'DOCX 排版引擎未能載入，請檢查網絡。'
+    );
    }
-
-   plainMode=false;
 
    await docx.renderAsync(
     buffer,
@@ -460,14 +599,18 @@ async function openFile(file){
     {
      className:'docx',
      inWrapper:true,
+
      ignoreWidth:false,
      ignoreHeight:false,
      ignoreFonts:false,
+
      breakPages:true,
      ignoreLastRenderedPageBreak:false,
-     experimental:false,
+
+     experimental:true,
      trimXmlDeclaration:true,
      useBase64URL:true,
+
      renderChanges:false,
      renderHeaders:true,
      renderFooters:true,
@@ -476,73 +619,115 @@ async function openFile(file){
     }
    );
 
-   fullText=getText();
-
   }
 
   /* =========================
      DOC 舊版 Word
-     使用 JSDoc HTML 格式化輸出
   ========================= */
 
   else{
 
-   message('正在解析舊版 DOC 及表格...');
+   message('正在解析舊版 DOC 格式及表格...');
 
-   if(typeof docToText!=='function'){
-    throw new Error('DOC 解析器未能載入，請檢查網絡。');
-   }
+   checkDocEngine();
 
-   if(typeof docToText.html!=='function'){
-    throw new Error('目前 DOC 解析器版本不支援 HTML 格式輸出。');
-   }
-
-   let result=docToText.html(buffer);
+   let result=docToText.html(
+    new Uint8Array(buffer)
+   );
 
    if(result && typeof result.then==='function'){
     result=await result;
    }
 
-   const html=getDocHtml(result);
+   let html=getDocHtml(result);
 
    if(!html){
-    throw new Error(
-     '無法解析此 DOC 文件，可能是加密、損壞或不支援的舊格式。'
+
+    /* 解析器純文字備用 */
+
+    const text=docToText(
+     new Uint8Array(buffer)
     );
-   }
 
-   plainMode=false;
+    if(typeof text==='string' && text.trim()){
 
-   const container=document.createElement('div');
-   container.className='doc-html';
-   container.innerHTML=html;
+     const container=document.createElement('div');
+     container.className='doc-html';
 
-   viewer.innerHTML='';
-   viewer.appendChild(container);
+     const p=document.createElement('p');
+     p.textContent=text;
 
-   /* 如果 HTML 有表格，確保表格可見 */
+     container.appendChild(p);
+     viewer.appendChild(container);
 
-   const tables=container.querySelectorAll('table');
+     message(
+      'DOC 已開啟 · 使用純文字備用模式，原有格式未能完整還原'
+     );
 
-   tables.forEach(table=>{
-    table.style.maxWidth='100%';
-   });
+    }else{
 
-   fullText=getText();
+     throw new Error(
+      '無法解析此 DOC 文件。可能是加密、損壞、Word 6/95 或不支援的格式。'
+     );
 
-   if(!fullText.trim() && !tables.length){
-    throw new Error('DOC 文件沒有可讀取的內容。');
-   }
+    }
 
-   if(tables.length){
-    message('DOC 載入成功 · 找到 '+tables.length+' 個表格');
+   }else{
+
+    const container=document.createElement('div');
+    container.className='doc-html';
+
+    container.innerHTML=html;
+
+    viewer.innerHTML='';
+    viewer.appendChild(container);
+
+    /* 表格自適應 */
+
+    container.querySelectorAll('table').forEach(table=>{
+
+     table.style.maxWidth='100%';
+
+    });
+
+    /* 圖片自適應 */
+
+    container.querySelectorAll('img').forEach(img=>{
+
+     img.style.maxWidth='100%';
+     img.style.height='auto';
+
+    });
+
+    /* 確認內容 */
+
+    if(!container.textContent.trim() &&
+       !container.querySelector('table,img')){
+
+     throw new Error('DOC 文件沒有可讀取的內容。');
+
+    }
+
+    const tables=container.querySelectorAll('table').length;
+
+    message(
+     'DOC 載入成功 · '+tables+' 個表格 · 格式化模式'
+    );
+
    }
 
   }
 
-  if(!fullText.trim() && !viewer.querySelector('table')){
-   throw new Error('文件沒有可讀取的文字內容。');
+  if(
+   !getText().trim() &&
+   !viewer.querySelector('table,img')
+  ){
+
+   throw new Error('文件沒有可讀取的內容。');
+
   }
+
+  /* 文件資訊 */
 
   $('meta').textContent=
    file.name+' | '+
@@ -553,6 +738,7 @@ async function openFile(file){
 
   zoom=100;
   viewer.style.zoom='1';
+
   $('zoom').textContent='100%';
 
   drop.style.display='none';
@@ -561,8 +747,6 @@ async function openFile(file){
 
   if(ext==='docx'){
    message('DOCX 文件載入成功');
-  }else if(!viewer.querySelector('table')){
-   message('DOC 文件載入成功');
   }
 
  }catch(err){
@@ -570,22 +754,26 @@ async function openFile(file){
   console.error(err);
 
   viewer.innerHTML='';
-  fullText='';
 
   message('讀取失敗：'+err.message);
 
-  alert('文件讀取失敗：\n\n'+err.message);
+  alert(
+   '文件讀取失敗：\n\n'+err.message
+  );
 
  }finally{
 
   $('loading').style.display='none';
+
   input.value='';
   busy=false;
+
  }
+
 }
 
 /* =========================
-   搜尋文件文字
+   搜尋文件
 ========================= */
 
 $('search').addEventListener('input',()=>{
@@ -596,7 +784,11 @@ $('search').addEventListener('input',()=>{
 
  if(!q)return;
 
- const escaped=q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+ const escaped=q.replace(
+  /[.*+?^${}()|[\]\\]/g,
+  '\\$&'
+ );
+
  const re=new RegExp(escaped,'gi');
 
  const walker=document.createTreeWalker(
@@ -609,11 +801,14 @@ $('search').addEventListener('input',()=>{
      return NodeFilter.FILTER_REJECT;
     }
 
-    if(node.parentElement.closest('mark,script,style')){
+    if(node.parentElement.closest(
+     'mark,script,style'
+    )){
      return NodeFilter.FILTER_REJECT;
     }
 
     return NodeFilter.FILTER_ACCEPT;
+
    }
   }
  );
@@ -643,7 +838,9 @@ $('search').addEventListener('input',()=>{
   while((m=re.exec(val))!==null){
 
    frag.appendChild(
-    document.createTextNode(val.slice(last,m.index))
+    document.createTextNode(
+     val.slice(last,m.index)
+    )
    );
 
    const mark=document.createElement('mark');
@@ -652,6 +849,7 @@ $('search').addEventListener('input',()=>{
    frag.appendChild(mark);
 
    last=re.lastIndex;
+
   }
 
   frag.appendChild(
@@ -659,13 +857,17 @@ $('search').addEventListener('input',()=>{
   );
 
   n.replaceWith(frag);
+
  });
 
- matches=Array.from(viewer.querySelectorAll('mark'));
+ matches=Array.from(
+  viewer.querySelectorAll('mark')
+ );
 
  current=matches.length?0:-1;
 
  updateSearch();
+
 });
 
 function updateSearch(){
@@ -678,20 +880,26 @@ function updateSearch(){
  });
 
  if(current>=0){
+
   matches[current].scrollIntoView({
    behavior:'smooth',
    block:'center'
   });
+
  }
+
 }
 
 function moveSearch(dir){
 
  if(!matches.length)return;
 
- current=(current+dir+matches.length)%matches.length;
+ current=(
+  current+dir+matches.length
+ )%matches.length;
 
  updateSearch();
+
 }
 
 $('next').onclick=()=>moveSearch(1);
@@ -708,10 +916,13 @@ $('copy').onclick=async()=>{
   const text=getText();
 
   if(navigator.clipboard && window.isSecureContext){
+
    await navigator.clipboard.writeText(text);
+
   }else{
 
    const t=document.createElement('textarea');
+
    t.value=text;
 
    document.body.appendChild(t);
@@ -722,13 +933,17 @@ $('copy').onclick=async()=>{
    }
 
    t.remove();
+
   }
 
   alert('全文已複製');
 
  }catch(e){
+
   alert('複製失敗，請手動選取文字');
+
  }
+
 };
 
 /* =========================
@@ -748,13 +963,12 @@ $('clear').onclick=()=>{
  $('meta').textContent='';
  $('search').value='';
 
- fullText='';
- plainMode=false;
  zoom=100;
 
  resetSearch();
 
  message('等待載入文件');
+
 };
 
 /* =========================
@@ -768,6 +982,7 @@ $('themeBtn').onclick=()=>{
  $('themeBtn').textContent=
   document.body.classList.contains('dark')?
   '☀️':'🌙';
+
 };
 
 /* =========================
@@ -775,12 +990,16 @@ $('themeBtn').onclick=()=>{
 ========================= */
 
 drop.addEventListener('dragover',e=>{
+
  e.preventDefault();
  drop.classList.add('drag');
+
 });
 
 drop.addEventListener('dragleave',()=>{
+
  drop.classList.remove('drag');
+
 });
 
 drop.addEventListener('drop',e=>{
@@ -792,6 +1011,7 @@ drop.addEventListener('drop',e=>{
  const file=e.dataTransfer.files[0];
 
  if(file)openFile(file);
+
 });
 
 document.addEventListener('dragover',e=>{
@@ -803,8 +1023,10 @@ document.addEventListener('drop',e=>{
  if(e.target!==drop && !drop.contains(e.target)){
   e.preventDefault();
  }
+
 });
 
 </script>
+
 </body>
 </html>
