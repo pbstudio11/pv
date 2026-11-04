@@ -1,11 +1,11 @@
-
 <!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Word 文件閱讀器 5.1</title>
+<title>Word 文件閱讀器 5.2</title>
 
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/docx-preview@0.3.6/dist/docx-preview.min.css">
 <script src="https://cdn.jsdelivr.net/npm/docx-preview@0.3.6/dist/docx-preview.min.js"></script>
 <script src="https://cdn.jsdelivr.net/gh/Alpaq92/JSDoc@main/src/docToText.js"></script>
 
@@ -113,9 +113,10 @@ main{
 #viewer{
  width:100%;
  margin:auto;
+ min-width:0;
 }
 
-/* Word 頁面 */
+/* Word 頁面及 DOCX 表格格式（5.2） */
 
 #viewer .docx-wrapper{
  background:transparent;
@@ -125,6 +126,25 @@ main{
 #viewer .docx{
  margin:0 auto 20px;
  box-shadow:0 3px 15px #0002;
+ max-width:100%;
+}
+
+/* Word TABLE 格式加強 */
+
+#viewer .docx table{
+ border-collapse:collapse;
+ max-width:100%;
+}
+
+#viewer .docx td,
+#viewer .docx th{
+ vertical-align:top;
+ overflow-wrap:anywhere;
+}
+
+#viewer .docx table p{
+ margin-top:0;
+ margin-bottom:0;
 }
 
 /* 搜尋結果 */
@@ -203,8 +223,8 @@ mark.active{
 
 <header>
  <div>
-  <h1>📄 Word 文件閱讀器 5.1</h1>
-  <small>DOC / DOCX · 原貌排版閱讀</small>
+  <h1>📄 Word 文件閱讀器 5.2</h1>
+  <small>DOC / DOCX · 原貌排版閱讀 · 加強 Word 表格支援</small>
  </div>
  <button id="themeBtn">🌙</button>
 </header>
@@ -235,7 +255,7 @@ mark.active{
  </label>
 
  <p style="font-size:12px;color:#94a3b8;margin-top:20px">
- DOCX：保留大部分 Word 排版<br>
+ DOCX：保留大部分 Word 排版及表格框線、欄寬、儲存格格式<br>
  DOC：舊格式文字解析<br>
  文件只在瀏覽器本機處理
  </p>
