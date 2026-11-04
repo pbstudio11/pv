@@ -1,711 +1,429 @@
+HTML
 <!DOCTYPE html>
-<html lang="zh-Hant" class="h-full">
+<html lang="zh-Hant">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="theme-color" content="#2563eb">
-<title>Doc & DOCX 閱讀器 2.0</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Word 文件閱讀器 3.0</title>
 
-<script src="https://cdn.tailwindcss.com"></script>
-<script>
-tailwind.config = {
-  darkMode: 'class'
-};
-</script>
-
-<link rel="stylesheet"
- href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
-
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;600;700&display=swap" rel="stylesheet">
-
-<!-- DOCX Parser -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.9.0/mammoth.browser.min.js"></script>
-
-<!-- HTML Security Sanitizer -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.2.6/purify.min.js"></script>
 
+<!-- 舊版 DOC 解析器 -->
+<script src="https://raw.githubusercontent.com/Alpaq92/JSDoc/main/src/docToText.js"></script>
+
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+
 <style>
-* { box-sizing: border-box; }
-
-body {
-    font-family: 'Inter', 'Noto Sans TC', sans-serif;
+*{box-sizing:border-box}
+body{
+ margin:0;background:#f1f5f9;color:#1e293b;
+ font-family:'Noto Sans TC',sans-serif;
 }
-
-.doc-content {
-    font-size: var(--doc-size, 16px);
-    line-height: 1.9;
-    color: #1f2937;
-    overflow-wrap: anywhere;
-    word-break: normal;
+header{
+ background:#fff;padding:16px 22px;
+ display:flex;justify-content:space-between;
+ align-items:center;border-bottom:1px solid #ddd;
 }
-
-.doc-content p {
-    margin: 0 0 1em;
+h1{font-size:19px;margin:0}
+button,.upload{
+ border:0;border-radius:8px;padding:11px 17px;
+ background:#2563eb;color:white;cursor:pointer;
+ font-size:14px;display:inline-block;
 }
-
-.doc-content h1 {
-    font-size: 1.9em;
-    font-weight: 700;
-    margin: 1em 0 .5em;
+button:hover,.upload:hover{background:#1d4ed8}
+.toolbar{
+ background:white;padding:12px;
+ display:flex;gap:10px;align-items:center;
+ flex-wrap:wrap;justify-content:center;
 }
-
-.doc-content h2 {
-    font-size: 1.5em;
-    font-weight: 700;
-    margin: .9em 0 .5em;
+.toolbar input[type=search]{
+ padding:10px;border:1px solid #ddd;border-radius:7px;
+ min-width:180px;
 }
-
-.doc-content h3 {
-    font-size: 1.25em;
-    font-weight: 600;
-    margin: .8em 0 .4em;
+#fileInput{display:none}
+main{padding:20px;max-width:1100px;margin:auto}
+#dropzone{
+ background:white;border:2px dashed #94a3b8;
+ border-radius:15px;padding:55px 20px;
+ text-align:center;cursor:pointer;
 }
-
-.doc-content ul {
-    list-style: disc;
-    padding-left: 2em;
-    margin: 1em 0;
+#dropzone.drag{border-color:#2563eb;background:#eff6ff}
+#paper{
+ display:none;background:white;padding:45px;
+ min-height:70vh;box-shadow:0 4px 20px #0001;
+ margin:auto;max-width:900px;
+ overflow-wrap:anywhere;
 }
-
-.doc-content ol {
-    list-style: decimal;
-    padding-left: 2em;
-    margin: 1em 0;
+#viewer{
+ font-size:16px;line-height:1.9;
+ white-space:normal;
 }
-
-.doc-content table {
-    border-collapse: collapse;
-    width: 100%;
-    margin: 1.2em 0;
-    display: block;
-    overflow-x: auto;
+#viewer p{margin:0 0 1em}
+#viewer h1,#viewer h2,#viewer h3{margin:1em 0 .5em}
+#viewer table{border-collapse:collapse;width:100%;margin:15px 0}
+#viewer td,#viewer th{border:1px solid #ccc;padding:8px}
+#viewer img{max-width:100%}
+mark{background:#fde047;color:#111}
+#message{
+ padding:12px;text-align:center;color:#475569;
 }
-
-.doc-content td,
-.doc-content th {
-    border: 1px solid #d1d5db;
-    padding: 8px 12px;
-    min-width: 70px;
-    text-align: left;
+#meta{text-align:center;color:#64748b;font-size:13px;margin:12px}
+.dark{background:#0f172a;color:#f1f5f9}
+.dark header,.dark .toolbar,.dark #dropzone,.dark #paper{
+ background:#1e293b;color:#f1f5f9;
 }
-
-.doc-content th {
-    background: #f3f4f6;
-    font-weight: 700;
-}
-
-.doc-content img {
-    max-width: 100%;
-    height: auto;
-}
-
-.doc-content blockquote {
-    border-left: 4px solid #3b82f6;
-    padding-left: 1em;
-    margin: 1em 0;
-    color: #64748b;
-}
-
-.doc-content a {
-    color: #2563eb;
-    text-decoration: underline;
-}
-
-.dark .doc-content {
-    color: #e5e7eb;
-}
-
-.dark .doc-content h1,
-.dark .doc-content h2,
-.dark .doc-content h3 {
-    color: #f9fafb;
-}
-
-.dark .doc-content th {
-    background: #1e293b;
-}
-
-.dark .doc-content td,
-.dark .doc-content th {
-    border-color: #475569;
-}
-
-mark.highlight {
-    background: #fde047;
-    color: #111827;
-    border-radius: 3px;
-    padding: 1px 2px;
-}
-
-mark.highlight.active {
-    background: #fb923c;
-    outline: 2px solid #f97316;
-}
-
-#paperSheet {
-    transition: none;
-}
-
-button:focus-visible,
-input:focus-visible,
-label:focus-visible {
-    outline: 2px solid #3b82f6;
-    outline-offset: 3px;
-}
-
-@media print {
-    .no-print { display: none !important; }
-
-    body {
-        background: white !important;
-    }
-
-    #scrollContainer {
-        overflow: visible !important;
-        padding: 0 !important;
-    }
-
-    #paperSheet {
-        box-shadow: none !important;
-        border: none !important;
-        max-width: 100% !important;
-        padding: 0 !important;
-    }
+.dark #viewer{color:#f1f5f9}
+.dark #viewer th{background:#334155}
+.dark #viewer td,.dark #viewer th{border-color:#475569}
+.dark #dropzone{border-color:#475569}
+@media(max-width:600px){
+ header{padding:12px}
+ h1{font-size:16px}
+ main{padding:10px}
+ #paper{padding:20px}
+ .toolbar{gap:6px}
 }
 </style>
 </head>
 
-<body class="h-full flex flex-col bg-slate-100 text-slate-800 dark:bg-slate-950 dark:text-slate-100">
+<body>
 
-<!-- HEADER -->
-<header class="no-print bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-4 py-3 flex justify-between items-center shadow-sm">
-
-    <div class="flex items-center gap-3">
-        <div class="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow">
-            <i class="fa-solid fa-file-word text-xl"></i>
-        </div>
-
-        <div>
-            <h1 class="font-bold text-lg">Doc / DOCX 閱讀器</h1>
-            <p class="text-xs text-slate-500 dark:text-slate-400">
-                Version 2.0 · 中文 / 日文 / English
-            </p>
-        </div>
-    </div>
-
-    <div class="flex items-center gap-2">
-
-        <label for="fileInput"
-        class="cursor-pointer bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium">
-            <i class="fa-solid fa-folder-open mr-1"></i>
-            <span class="hidden sm:inline">開啟文件</span>
-        </label>
-
-        <input id="fileInput" type="file"
-        accept=".docx,.doc"
-        class="hidden">
-
-        <button id="btnSample"
-        class="px-3 py-2 rounded-lg bg-slate-100 dark:bg-slate-700 text-sm">
-            <i class="fa-solid fa-file-lines text-blue-500"></i>
-            <span class="hidden md:inline">範例</span>
-        </button>
-
-        <button id="btnTheme"
-        class="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700"
-        title="切換深色模式">
-            <i id="themeIcon" class="fa-solid fa-moon"></i>
-        </button>
-
-    </div>
+<header>
+ <div>
+  <h1>📄 Word 文件閱讀器 3.0</h1>
+  <small>支援 DOC / DOCX · 中文 · 日文 · 英文</small>
+ </div>
+ <button id="themeBtn">🌙</button>
 </header>
 
-<!-- MAIN -->
-<main class="flex-1 flex min-h-0 overflow-hidden">
+<div class="toolbar" id="toolbar" style="display:none">
+ <input type="search" id="search" placeholder="搜尋文件文字">
+ <button id="prev">↑</button>
+ <button id="next">↓</button>
+ <span id="count">0/0</span>
+ <button id="smaller">－</button>
+ <span id="zoom">100%</span>
+ <button id="bigger">＋</button>
+ <button id="copy">📋 複製全文</button>
+ <button id="clear">關閉文件</button>
+</div>
 
-    <!-- SIDEBAR -->
-    <aside class="no-print hidden lg:flex w-64 flex-col bg-white dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700">
+<main>
 
-        <div class="p-4 border-b border-slate-200 dark:border-slate-700">
-            <h2 class="text-xs font-bold text-slate-400 mb-3">文件資訊</h2>
-            <div id="fileMeta" class="text-sm text-slate-500">
-                尚未開啟文件
-            </div>
-        </div>
+ <input type="file" id="fileInput" accept=".doc,.docx">
 
-        <div class="p-4">
+ <div id="dropzone">
+  <div style="font-size:50px">📂</div>
+  <h2>開啟 Word 文件</h2>
+  <p>請選擇 DOC 或 DOCX 文件，亦可以拖放文件到此處。</p>
+  <label for="fileInput" class="upload">選擇電腦檔案</label>
+  <p style="font-size:12px;color:#94a3b8;margin-top:20px">
+   DOC：舊版 Word 格式<br>
+   DOCX：新版 Word 格式
+  </p>
+ </div>
 
-            <h2 class="text-xs font-bold text-slate-400 mb-3">文字統計</h2>
+ <div id="message">等待載入文件</div>
+ <div id="meta"></div>
 
-            <div class="grid grid-cols-2 gap-2 text-center">
-
-                <div class="bg-slate-100 dark:bg-slate-700 rounded-lg p-3">
-                    <div class="text-xs text-slate-500">總字數</div>
-                    <div id="statWords" class="text-xl font-bold text-blue-600">0</div>
-                </div>
-
-                <div class="bg-slate-100 dark:bg-slate-700 rounded-lg p-3">
-                    <div class="text-xs text-slate-500">總字元</div>
-                    <div id="statChars" class="text-xl font-bold">0</div>
-                </div>
-
-            </div>
-
-            <h2 class="text-xs font-bold text-slate-400 mt-6 mb-3">語言偵測</h2>
-
-            <div id="langBadges" class="flex flex-wrap gap-2">
-                <span class="text-xs text-slate-400">等待文件</span>
-            </div>
-
-        </div>
-    </aside>
-
-    <!-- READER -->
-    <section class="flex-1 flex flex-col min-w-0 bg-slate-200/70 dark:bg-slate-950">
-
-        <!-- TOOLBAR -->
-        <div id="controlBar"
-        class="no-print hidden bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-3 py-2 flex flex-wrap justify-between items-center gap-3">
-
-            <div class="flex items-center gap-2 bg-slate-100 dark:bg-slate-700 rounded-lg px-3 py-2 flex-1 min-w-[180px] max-w-md">
-
-                <i class="fa-solid fa-magnifying-glass text-slate-400"></i>
-
-                <input id="searchInput"
-                type="search"
-                placeholder="搜尋文件內容..."
-                class="bg-transparent outline-none text-sm w-full min-w-0">
-
-                <span id="searchCount" class="text-xs text-slate-400 whitespace-nowrap">0/0</span>
-
-                <button id="btnPrev" title="上一個"
-                class="text-slate-500 hover:text-blue-600">
-                    <i class="fa-solid fa-chevron-up"></i>
-                </button>
-
-                <button id="btnNext" title="下一個"
-                class="text-slate-500 hover:text-blue-600">
-                    <i class="fa-solid fa-chevron-down"></i>
-                </button>
-
-            </div>
-
-            <div class="flex items-center gap-2">
-
-                <div class="flex items-center bg-slate-100 dark:bg-slate-700 rounded-lg p-1">
-
-                    <button id="btnZoomOut" class="px-2 py-1">
-                        <i class="fa-solid fa-minus"></i>
-                    </button>
-
-                    <span id="zoomLevel" class="text-xs font-bold px-2">100%</span>
-
-                    <button id="btnZoomIn" class="px-2 py-1">
-                        <i class="fa-solid fa-plus"></i>
-                    </button>
-
-                </div>
-
-                <button id="btnCopy"
-                class="px-3 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm"
-                title="複製全文">
-                    <i class="fa-regular fa-copy mr-1"></i>
-                    <span class="hidden sm:inline">複製全文</span>
-                </button>
-
-            </div>
-
-        </div>
-
-        <!-- CONTENT -->
-        <div id="scrollContainer"
-        class="flex-1 overflow-y-auto p-4 md:p-8 flex justify-center">
-
-            <!-- EMPTY -->
-            <div id="dropzone"
-            class="w-full max-w-xl my-auto border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-2xl p-8 md:p-12 text-center bg-white/70 dark:bg-slate-800/70 cursor-pointer transition">
-
-                <div class="w-16 h-16 bg-blue-100 dark:bg-slate-700 text-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-5 text-3xl">
-                    <i class="fa-solid fa-cloud-arrow-up"></i>
-                </div>
-
-                <h2 class="font-bold text-xl mb-3">線上 Word 文件閱讀器</h2>
-
-                <p class="text-sm text-slate-500 dark:text-slate-400 mb-6">
-                    將 DOCX 文件拖放到這裡，或選擇電腦內的文件。
-                </p>
-
-                <label for="fileInput"
-                class="inline-block cursor-pointer bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl font-medium">
-                    <i class="fa-solid fa-folder-open mr-2"></i>
-                    選擇文件
-                </label>
-
-                <div class="mt-7 text-xs text-slate-400 leading-6">
-                    <p><i class="fa-solid fa-check text-green-500 mr-1"></i> DOCX 直接閱讀</p>
-                    <p><i class="fa-solid fa-check text-green-500 mr-1"></i> 繁體 / 簡體 / 日文 / 英文</p>
-                    <p><i class="fa-solid fa-check text-green-500 mr-1"></i> 搜尋、複製、放大縮小</p>
-                    <p><i class="fa-solid fa-shield-halved text-green-500 mr-1"></i> 文件在瀏覽器本機處理</p>
-                </div>
-
-                <p class="text-xs text-amber-600 dark:text-amber-400 mt-5">
-                    舊版 DOC 格式需要先轉換成 DOCX。
-                </p>
-
-            </div>
-
-            <!-- PAPER -->
-            <article id="paperSheet"
-            class="hidden bg-white dark:bg-slate-800 shadow-xl rounded-sm w-full max-w-4xl min-h-full p-7 md:p-14 self-start">
-
-                <div id="docViewer" class="doc-content"></div>
-
-            </article>
-
-        </div>
-
-    </section>
+ <article id="paper">
+  <div id="viewer"></div>
+ </article>
 
 </main>
 
-<!-- LOADING -->
-<div id="loadingOverlay"
-class="no-print hidden fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center">
-
-    <div class="bg-white dark:bg-slate-800 rounded-xl p-7 text-center shadow-xl">
-
-        <div class="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-
-        <p id="loadingText" class="text-sm font-medium">
-            正在讀取文件...
-        </p>
-
-    </div>
-
-</div>
-
-<!-- TOAST -->
-<div id="toast"
-class="no-print fixed bottom-5 right-5 z-50 bg-slate-800 text-white rounded-lg px-4 py-3 text-sm shadow-xl opacity-0 pointer-events-none transition-opacity">
-</div>
-
 <script>
-'use strict';
+const $=id=>document.getElementById(id);
 
-// ================================
-// GLOBAL STATE
-// ================================
+let fullText='';
+let zoom=100;
+let matches=[];
+let current=-1;
 
-let originalText = '';
-let currentZoom = 100;
-let searchMatches = [];
-let currentMatchIdx = -1;
-let toastTimer = null;
+const input=$('fileInput');
+const drop=$('dropzone');
+const viewer=$('viewer');
 
-const $ = id => document.getElementById(id);
+function message(text){
+ $('message').textContent=text;
+}
 
-const fileInput = $('fileInput');
-const dropzone = $('dropzone');
-const paperSheet = $('paperSheet');
-const docViewer = $('docViewer');
-const controlBar = $('controlBar');
-const scrollContainer = $('scrollContainer');
+function safeText(text){
+ return text.replace(/[&<>"']/g,c=>({
+  '&':'&amp;','<':'&lt;','>':'&gt;',
+  '"':'&quot;',"'":'&#39;'
+ })[c]);
+}
 
-// ================================
-// INITIALIZATION
-// ================================
-
-document.addEventListener('DOMContentLoaded', () => {
-
-    // Theme
-    const savedTheme = localStorage.getItem('docReaderTheme');
-
-    if (savedTheme === 'dark') {
-        document.documentElement.classList.add('dark');
-    }
-
-    updateThemeIcon();
-
-    $('btnTheme').addEventListener('click', toggleTheme);
-
-    // File selection
-    fileInput.addEventListener('change', e => {
-        if (e.target.files[0]) {
-            processFile(e.target.files[0]);
-        }
-    });
-
-    // Dropzone
-    dropzone.addEventListener('dragover', e => {
-        e.preventDefault();
-        dropzone.classList.add('border-blue-500');
-    });
-
-    dropzone.addEventListener('dragleave', () => {
-        dropzone.classList.remove('border-blue-500');
-    });
-
-    dropzone.addEventListener('drop', e => {
-        e.preventDefault();
-        dropzone.classList.remove('border-blue-500');
-
-        const file = e.dataTransfer.files[0];
-
-        if (file) processFile(file);
-    });
-
-    // Also allow dropping files anywhere in reader
-    scrollContainer.addEventListener('dragover', e => {
-        e.preventDefault();
-    });
-
-    scrollContainer.addEventListener('drop', e => {
-        if (e.target !== dropzone && !dropzone.contains(e.target)) {
-            e.preventDefault();
-            const file = e.dataTransfer.files[0];
-            if (file) processFile(file);
-        }
-    });
-
-    // Buttons
-    $('btnSample').addEventListener('click', loadSample);
-
-    $('btnZoomIn').addEventListener('click', () => adjustZoom(10));
-    $('btnZoomOut').addEventListener('click', () => adjustZoom(-10));
-
-    $('btnCopy').addEventListener('click', copyText);
-
-    // Search
-    $('searchInput').addEventListener('input', handleSearch);
-
-    $('btnNext').addEventListener('click', () => navigateSearch(1));
-    $('btnPrev').addEventListener('click', () => navigateSearch(-1));
-
-    // Keyboard shortcuts
-    document.addEventListener('keydown', e => {
-
-        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'f') {
-            if (!paperSheet.classList.contains('hidden')) {
-                e.preventDefault();
-                $('searchInput').focus();
-                $('searchInput').select();
-            }
-        }
-
-        if (e.key === 'Escape') {
-            $('searchInput').value = '';
-            handleSearch({target: $('searchInput')});
-        }
-    });
-
+// 直接開啟文件
+input.addEventListener('change',()=>{
+ const file=input.files[0];
+ if(file) openFile(file);
 });
 
-// ================================
-// FILE PROCESSING
-// ================================
+async function openFile(file){
 
-async function processFile(file) {
+ const ext=file.name.split('.').pop().toLowerCase();
 
-    if (!file) return;
+ if(!['doc','docx'].includes(ext)){
+  alert('只支援 DOC 和 DOCX 文件');
+  input.value='';
+  return;
+ }
 
-    const name = file.name;
-    const ext = name.split('.').pop().toLowerCase();
+ if(file.size===0 || file.size>30*1024*1024){
+  alert('文件大小不正確，或超過30MB');
+  input.value='';
+  return;
+ }
 
-    if (!['docx', 'doc'].includes(ext)) {
-        showToast('只支援 DOCX 或 DOC 文件', 'error');
-        return;
-    }
+ message('正在讀取 '+file.name+' ...');
 
-    if (file.size === 0) {
-        showToast('文件是空的，無法讀取', 'error');
-        return;
-    }
+ try{
 
-    if (file.size > 30 * 1024 * 1024) {
-        showToast('文件太大，請選擇少於 30MB 的文件', 'error');
-        return;
-    }
+  const buffer=await file.arrayBuffer();
 
-    // Legacy DOC is not ZIP-based DOCX
-    if (ext === 'doc') {
+  if(ext==='docx'){
+   await readDOCX(buffer);
+  }else{
+   readDOC(buffer);
+  }
 
-        showToast(
-            '舊版 DOC 暫不支援直接解析，請先另存為 DOCX',
-            'error'
-        );
+  $('dropzone').style.display='none';
+  $('paper').style.display='block';
+  $('toolbar').style.display='flex';
 
-        return;
-    }
+  $('meta').textContent=
+   file.name+' | '+(file.size/1024).toFixed(1)+' KB | '+ext.toUpperCase();
 
-    if (typeof mammoth === 'undefined' ||
-        typeof DOMPurify === 'undefined') {
+  $('search').value='';
+  zoom=100;
+  updateZoom();
+  analyze();
+  message('文件載入成功');
 
-        showToast('解析程式未能載入，請檢查網絡連線', 'error');
-        return;
-    }
+ }catch(err){
 
-    showLoading('正在讀取 DOCX 文件...');
+  console.error(err);
+  message('讀取失敗：'+err.message);
+  alert('文件讀取失敗：'+err.message);
 
-    try {
-
-        const arrayBuffer = await file.arrayBuffer();
-
-        // Check ZIP file signature
-        const bytes = new Uint8Array(arrayBuffer);
-
-        if (
-            bytes[0] !== 0x50 ||
-            bytes[1] !== 0x4B
-        ) {
-            throw new Error('文件格式不正確，可能不是有效的 DOCX 文件');
-        }
-
-        const result = await mammoth.convertToHtml(
-            {arrayBuffer: arrayBuffer},
-            {
-                includeDefaultStyleMap: true,
-                ignoreEmptyParagraphs: false
-            }
-        );
-
-        if (!result.value || !result.value.trim()) {
-            throw new Error('文件內沒有可讀取的文字');
-        }
-
-        // Sanitize generated HTML
-        const safeHTML = DOMPurify.sanitize(result.value, {
-            USE_PROFILES: {html: true},
-            FORBID_TAGS: [
-                'script',
-                'iframe',
-                'object',
-                'embed',
-                'form',
-                'style'
-            ],
-            FORBID_ATTR: [
-                'onerror',
-                'onclick',
-                'onload'
-            ]
-        });
-
-        docViewer.innerHTML = safeHTML;
-
-        showDocument(name, file.size);
-
-        if (result.messages && result.messages.length > 0) {
-            console.info('DOCX parsing notices:', result.messages);
-        }
-
-        showToast('DOCX 文件載入成功！', 'success');
-
-    } catch (error) {
-
-        console.error(error);
-
-        showToast(
-            '文件讀取失敗：' + error.message,
-            'error'
-        );
-
-    } finally {
-
-        hideLoading();
-
-        // Allow selecting the same file again
-        fileInput.value = '';
-
-    }
+ }finally{
+  input.value='';
+ }
 }
 
-// ================================
-// DISPLAY DOCUMENT
-// ================================
+// DOCX
+async function readDOCX(buffer){
 
-function showDocument(name, size) {
+ if(typeof mammoth==='undefined'){
+  throw new Error('DOCX 解析程式未能載入，請檢查網絡');
+ }
 
-    dropzone.classList.add('hidden');
-    paperSheet.classList.remove('hidden');
-    controlBar.classList.remove('hidden');
+ const result=await mammoth.convertToHtml({
+  arrayBuffer:buffer
+ });
 
-    $('fileMeta').innerHTML = '';
+ if(!result.value){
+  throw new Error('DOCX 沒有可讀取的內容');
+ }
 
-    const nameElement = document.createElement('div');
-    nameElement.className = 'font-medium break-all';
-    nameElement.textContent = name;
-
-    const sizeElement = document.createElement('div');
-    sizeElement.className = 'text-xs text-slate-400 mt-2';
-    sizeElement.textContent =
-        (size / 1024).toFixed(1) + ' KB · DOCX';
-
-    $('fileMeta').append(nameElement, sizeElement);
-
-    currentZoom = 100;
-    updateZoom();
-
-    $('searchInput').value = '';
-
-    analyzeText();
-
-    scrollContainer.scrollTop = 0;
+ viewer.innerHTML=DOMPurify.sanitize(result.value,{
+  USE_PROFILES:{html:true},
+  FORBID_TAGS:['script','iframe','object','embed','form','style'],
+  FORBID_ATTR:['onerror','onclick','onload']
+ });
 }
 
-// ================================
-// TEXT ANALYSIS
-// ================================
+// DOC
+function readDOC(buffer){
 
-function analyzeText() {
+ if(typeof docToText!=='function'){
+  throw new Error('DOC 解析器未能載入，請檢查網絡');
+ }
 
-    originalText = docViewer.innerText || '';
+ const result=docToText(buffer);
 
-    $('statChars').textContent =
-        originalText.length.toLocaleString();
+ if(!result || !result.trim()){
+  throw new Error(
+   '無法解析此 DOC 文件。可能是加密、損壞或不受支援的舊版本。'
+  );
+ }
 
-    const cjk = (
-        originalText.match(
-            /[\u3400-\u4DBF\u4E00-\u9FFF\u3040-\u30FF]/g
-        ) || []
-    ).length;
+ // DOC 解析為純文字，保留段落及換行
+ viewer.innerHTML=result
+  .split(/\r\n|\r|\n/)
+  .map(line=>'<p>'+safeText(line || ' ')+'</p>')
+  .join('');
+}
 
-    const other = originalText
-        .replace(
-            /[\u3400-\u4DBF\u4E00-\u9FFF\u3040-\u30FF]/g,
-            ' '
-        )
-        .trim()
-        .split(/\s+/)
-        .filter(Boolean).length;
+// 統計
+function analyze(){
+ fullText=viewer.innerText||'';
+}
 
-    $('statWords').textContent =
-        (cjk + other).toLocaleString();
+// 放大縮小
+function updateZoom(){
+ viewer.style.fontSize=(16*zoom/100)+'px';
+ $('zoom').textContent=zoom+'%';
+}
 
-    const hasChinese = /[\u3400-\u9FFF]/.test(originalText);
-    const hasJapanese = /[\u3040-\u30FF]/.test(originalText);
-    const hasEnglish = /[a-zA-Z]/.test(originalText);
+$('bigger').onclick=()=>{
+ zoom=Math.min(180,zoom+10);
+ updateZoom();
+};
 
-    const badges = [];
+$('smaller').onclick=()=>{
+ zoom=Math.max(60,zoom-10);
+ updateZoom();
+};
 
-    if (hasChinese) badges.push(['中文', 'blue']);
-    if (hasJapanese) badges.push(['日文', 'red']);
-    if (hasEnglish) badges.push(['英文', 'green']);
+// 複製
+$('copy').onclick=async()=>{
+ try{
+  if(navigator.clipboard && window.isSecureContext){
+   await navigator.clipboard.writeText(fullText);
+  }else{
+   const t=document.createElement('textarea');
+   t.value=fullText;
+   document.body.appendChild(t);
+   t.select();
+   if(!document.execCommand('copy')) throw Error();
+   t.remove();
+  }
+  alert('全文已複製');
+ }catch(e){
+  alert('複製失敗，請手動選取文字');
+ }
+};
 
-    $('langBadges').innerHTML = '';
+// 搜尋
+function clearMarks(){
+ viewer.querySelectorAll('mark').forEach(m=>{
+  m.replaceWith(document.createTextNode(m.textContent));
+ });
+ viewer.normalize();
+ matches=[];
+ current=-1;
+}
 
-    badges.forEach(([label, color]) => {
+$('search').addEventListener('input',()=>{
+ const q=$('search').value.trim();
+ clearMarks();
 
-        const badge = document.createElement('span');
+ if(!q){
+  $('count').textContent='0/0';
+  return;
+ }
 
-        badge.className =
-            `text-xs px-2 py-1 rounded bg-${color}-100 text-${color}-800`;
+ const walker=document.createTreeWalker(
+  viewer,NodeFilter.SHOW_TEXT
+ );
 
-        badge.textContent = label;
+ const nodes=[];
+ let node;
 
-        $('langBadges').appendChild(badge);
+ while(node=walker.nextNode()){
+  if(node.parentElement.closest('mark'))continue;
+  nodes.push(node);
+ }
 
-    });
+ const escaped=q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+ const re=new RegExp(escaped,'gi');
 
-    if (!badges.length
+ nodes.forEach(n=>{
+  const val=n.nodeValue;
+  if(!re.test(val)){re.lastIndex=0;return;}
+  re.lastIndex=0;
+
+  const frag=document.createDocumentFragment();
+  let last=0,m;
+
+  while(m=re.exec(val)){
+   frag.append(document.createTextNode(val.slice(last,m.index)));
+   const mark=document.createElement('mark');
+   mark.textContent=m[0];
+   frag.append(mark);
+   last=re.lastIndex;
+  }
+
+  frag.append(document.createTextNode(val.slice(last)));
+  n.replaceWith(frag);
+ });
+
+ matches=Array.from(viewer.querySelectorAll('mark'));
+ current=matches.length?0:-1;
+ updateSearch();
+});
+
+function updateSearch(){
+ $('count').textContent=matches.length?
+  (current+1)+'/'+matches.length:'0/0';
+
+ if(current>=0){
+  matches.forEach((m,i)=>{
+   m.style.outline=i===current?'2px solid #f97316':'none';
+  });
+  matches[current].scrollIntoView({
+   behavior:'smooth',block:'center'
+  });
+ }
+}
+
+function moveSearch(dir){
+ if(!matches.length)return;
+ current=(current+dir+matches.length)%matches.length;
+ updateSearch();
+}
+
+$('next').onclick=()=>moveSearch(1);
+$('prev').onclick=()=>moveSearch(-1);
+
+// 關閉文件
+$('clear').onclick=()=>{
+ viewer.innerHTML='';
+ $('paper').style.display='none';
+ $('toolbar').style.display='none';
+ $('dropzone').style.display='block';
+ $('meta').textContent='';
+ $('search').value='';
+ $('count').textContent='0/0';
+ fullText='';
+ message('等待載入文件');
+};
+
+// 深色模式
+$('themeBtn').onclick=()=>{
+ document.body.classList.toggle('dark');
+ $('themeBtn').textContent=
+  document.body.classList.contains('dark')?'☀️':'🌙';
+};
+
+// 拖放
+drop.addEventListener('dragover',e=>{
+ e.preventDefault();
+ drop.classList.add('drag');
+});
+
+drop.addEventListener('dragleave',()=>{
+ drop.classList.remove('drag');
+});
+
+drop.addEventListener('drop',e=>{
+ e.preventDefault();
+ drop.classList.remove('drag');
+ const file=e.dataTransfer.files[0];
+ if(file)openFile(file);
+});
+
+document.addEventListener('dragover',e=>e.preventDefault());
+document.addEventListener('drop',e=>{
+ if(e.target!==drop && !drop.contains(e.target)){
+  e.preventDefault();
+ }
+});
+
+</script>
+</body>
+</html>
