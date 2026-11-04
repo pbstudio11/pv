@@ -4,10 +4,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Word 文件閱讀器 5.3</title>
+<title>Word 文件閱讀器 5.2</title>
 
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/docx-preview@0.3.6/dist/docx-preview.min.css">
+<!-- DOCX 排版引擎 -->
 <script src="https://cdn.jsdelivr.net/npm/docx-preview@0.3.6/dist/docx-preview.min.js"></script>
+
+<!-- 舊版 DOC 本機解析器：無 TOKEN、無上傳 -->
 <script src="https://cdn.jsdelivr.net/gh/Alpaq92/JSDoc@main/src/docToText.js"></script>
 
 <style>
@@ -27,7 +29,6 @@ header{
  justify-content:space-between;
  align-items:center;
  border-bottom:1px solid #ddd;
- gap:10px;
 }
 
 h1{font-size:19px;margin:0}
@@ -89,7 +90,6 @@ main{
  display:none;
  text-align:center;
  padding:20px;
- font-weight:bold;
 }
 
 #message{
@@ -116,8 +116,9 @@ main{
 #viewer{
  width:100%;
  margin:auto;
- min-width:0;
 }
+
+/* DOCX 頁面 */
 
 #viewer .docx-wrapper{
  background:transparent;
@@ -127,28 +128,58 @@ main{
 #viewer .docx{
  margin:0 auto 20px;
  box-shadow:0 3px 15px #0002;
- max-width:100%;
 }
 
-/* TABLE 支援 */
+/* 舊 DOC 格式化文件 */
 
-#viewer .docx table{
- border-collapse:collapse;
- max-width:100%;
-}
-
-#viewer .docx td,
-#viewer .docx th{
- vertical-align:top;
+.doc-html{
+ background:white;
+ color:#222;
+ padding:40px;
+ min-height:70vh;
+ max-width:1000px;
+ margin:auto;
+ overflow-x:auto;
+ line-height:1.7;
  overflow-wrap:anywhere;
 }
 
-#viewer .docx table p{
- margin-top:0;
- margin-bottom:0;
+/* 舊 DOC 表格：保留原有結構及基本邊框 */
+
+.doc-html table{
+ border-collapse:collapse;
+ border-spacing:0;
+ max-width:100%;
+ margin:12px 0;
 }
 
-/* 搜尋 */
+.doc-html td,
+.doc-html th{
+ border:1px solid #999;
+ padding:5px 8px;
+ vertical-align:top;
+ min-width:25px;
+}
+
+.doc-html tr{
+ page-break-inside:avoid;
+}
+
+.doc-html p{
+ margin-top:0;
+ margin-bottom:6px;
+}
+
+.doc-html img{
+ max-width:100%;
+ height:auto;
+}
+
+.doc-html table img{
+ max-width:100%;
+}
+
+/* 搜尋結果 */
 
 mark{
  background:#fde047 !important;
@@ -160,20 +191,6 @@ mark.active{
  outline:2px solid #f97316;
 }
 
-/* 舊 DOC 備用文字模式 */
-
-.plain-document{
- background:white;
- padding:45px;
- min-height:70vh;
- max-width:900px;
- margin:auto;
- white-space:pre-wrap;
- overflow-wrap:anywhere;
- font-size:16px;
- line-height:1.9;
-}
-
 /* 深色模式 */
 
 .dark{
@@ -181,7 +198,8 @@ mark.active{
  color:#f1f5f9;
 }
 
-.dark header,.dark .toolbar,
+.dark header,
+.dark .toolbar,
 .dark #dropzone{
  background:#1e293b;
  color:#f1f5f9;
@@ -190,9 +208,14 @@ mark.active{
 .dark #dropzone{border-color:#475569}
 .dark #paper{background:#334155}
 
-.dark .plain-document{
+.dark .doc-html{
  background:#1e293b;
  color:#f1f5f9;
+}
+
+.dark .doc-html td,
+.dark .doc-html th{
+ border-color:#64748b;
 }
 
 .dark .toolbar input{
@@ -201,7 +224,8 @@ mark.active{
  border-color:#475569;
 }
 
-.dark #message,.dark #meta{
+.dark #message,
+.dark #meta{
  color:#cbd5e1;
 }
 
@@ -217,6 +241,7 @@ mark.active{
  #paper{padding:10px 3px}
  .toolbar{gap:6px}
  .toolbar input{min-width:130px}
+ .doc-html{padding:15px}
 }
 </style>
 </head>
@@ -225,14 +250,10 @@ mark.active{
 
 <header>
  <div>
-  <h1>📄 Word 文件閱讀器 5.3</h1>
-  <small>DOC / DOCX · 舊版 DOC 雲端轉換 · TABLE 支援</small>
+  <h1>📄 Word 文件閱讀器 5.2</h1>
+  <small>DOC / DOCX · 表格排版閱讀</small>
  </div>
-
- <div style="display:flex;gap:6px">
-  <button id="keyBtn" title="設定 ConvertAPI Key">🔑 API</button>
-  <button id="themeBtn">🌙</button>
- </div>
+ <button id="themeBtn">🌙</button>
 </header>
 
 <div class="toolbar" id="toolbar" style="display:none">
@@ -261,10 +282,9 @@ mark.active{
  </label>
 
  <p style="font-size:12px;color:#94a3b8;margin-top:20px">
- DOCX：直接讀取 Word 排版<br>
- DOC：自動上傳轉換成 DOCX 再顯示<br>
- TABLE：支援表格、儲存格及框線還原<br>
- 文件轉換由 ConvertAPI 處理
+ DOCX：保留大部分 Word 排版<br>
+ DOC：支援表格及基本格式還原<br>
+ 文件只在瀏覽器本機處理，不會上傳
  </p>
 </div>
 
@@ -287,9 +307,6 @@ const input=$('fileInput');
 const drop=$('dropzone');
 const viewer=$('viewer');
 
-const API_URL='https://v2.convertapi.com/convert/doc/to/docx';
-const KEY_NAME='word_reader_convertapi_token';
-
 let fullText='';
 let zoom=100;
 let matches=[];
@@ -297,41 +314,7 @@ let current=-1;
 let busy=false;
 let plainMode=false;
 
-/* API KEY 管理 */
-
-function getApiKey(){
- return localStorage.getItem(KEY_NAME)||'';
-}
-
-function setApiKey(){
-
- const oldKey=getApiKey();
-
- const key=prompt(
-  '請輸入 ConvertAPI API Token：\n\n' +
-  '輸入後會儲存在此瀏覽器，方便下次使用。\n' +
-  '留空或取消不會更改原有設定。',
-  oldKey
- );
-
- if(key===null)return;
-
- if(!key.trim()){
-  if(confirm('是否刪除已儲存的 API Token？')){
-   localStorage.removeItem(KEY_NAME);
-   alert('API Token 已刪除');
-  }
-  return;
- }
-
- localStorage.setItem(KEY_NAME,key.trim());
-
- alert('API Token 已儲存！');
-}
-
-$('keyBtn').onclick=setApiKey;
-
-/* 提示訊息 */
+/* 基本訊息 */
 
 function message(text){
  $('message').textContent=text;
@@ -343,6 +326,8 @@ function resetSearch(){
  $('count').textContent='0/0';
 }
 
+/* 移除搜尋標記 */
+
 function removeMarks(){
 
  viewer.querySelectorAll('mark').forEach(m=>{
@@ -353,20 +338,17 @@ function removeMarks(){
  resetSearch();
 }
 
+/* 取得全文 */
+
 function getText(){
  return viewer.innerText || viewer.textContent || '';
 }
 
-/* 縮放 */
+/* 放大縮小 */
 
 function updateZoom(){
 
- if(plainMode){
-  const doc=viewer.querySelector('.plain-document');
-  if(doc)doc.style.fontSize=(16*zoom/100)+'px';
- }else{
-  viewer.style.zoom=zoom/100;
- }
+ viewer.style.zoom=zoom/100;
 
  $('zoom').textContent=zoom+'%';
 }
@@ -381,106 +363,38 @@ $('smaller').onclick=()=>{
  updateZoom();
 };
 
-/* DOC 舊版轉 DOCX */
+/* 從 JSDoc HTML 結果取得正文 */
 
-async function convertDOC(file){
+function getDocHtml(result){
 
- const token=getApiKey();
-
- if(!token){
-  throw new Error(
-   '尚未設定 ConvertAPI Token。\n\n' +
-   '請先按右上角 🔑 API 設定。'
-  );
+ if(typeof result==='string'){
+  return result;
  }
 
- message('正在上傳舊版 DOC 到轉換服務...');
-
- const form=new FormData();
-
- form.append('File',file,file.name);
- form.append('StoreFile','false');
-
- let response;
-
- try{
-
-  response=await fetch(API_URL,{
-   method:'POST',
-   headers:{
-    'Authorization':'Bearer '+token
-   },
-   body:form
-  });
-
- }catch(err){
-
-  throw new Error(
-   '無法連接 ConvertAPI。\n' +
-   '請檢查網絡或服務是否可用。\n\n'+
-   err.message
-  );
+ if(!result || typeof result!=='object'){
+  return '';
  }
 
- if(!response.ok){
-
-  let detail='';
-
-  try{
-   detail=await response.text();
-  }catch(e){}
-
-  if(response.status===401){
-   throw new Error('API Token 無效，請重新設定。');
-  }
-
-  if(response.status===402){
-   throw new Error('轉換額度不足或需要升級服務。');
-  }
-
-  if(response.status===429){
-   throw new Error('轉換次數過多，請稍後再試。');
-  }
-
-  throw new Error(
-   'DOC 轉換失敗：HTTP '+response.status+
-   '\n'+detail.slice(0,500)
-  );
+ if(typeof result.body==='string'){
+  return result.body;
  }
 
- const contentType=response.headers.get('content-type')||'';
-
- if(contentType.includes('json')){
-
-  const data=await response.json();
-
-  if(data.Files && data.Files[0] && data.Files[0].FileData){
-
-   const binary=atob(data.Files[0].FileData);
-   const bytes=new Uint8Array(binary.length);
-
-   for(let i=0;i<binary.length;i++){
-    bytes[i]=binary.charCodeAt(i);
-   }
-
-   return bytes.buffer;
-  }
-
-  throw new Error(
-   '轉換服務沒有傳回 DOCX 檔案。'
-  );
+ if(typeof result.html==='string'){
+  return result.html;
  }
 
- const blob=await response.blob();
-
- if(!blob.size){
-  throw new Error('轉換結果是空白檔案。');
+ if(typeof result.body?.html==='string'){
+  return result.body.html;
  }
 
- return await blob.arrayBuffer();
+ if(typeof result.document==='string'){
+  return result.document;
+ }
+
+ return '';
 }
 
-/* 開啟 DOC / DOCX */
+/* 載入檔案 */
 
 input.addEventListener('change',()=>{
  const file=input.files[0];
@@ -512,84 +426,144 @@ async function openFile(file){
  $('toolbar').style.display='none';
 
  viewer.innerHTML='';
+ viewer.style.zoom='1';
+
  fullText='';
+ plainMode=false;
+
  resetSearch();
+
+ message('正在讀取 '+file.name+'...');
 
  try{
 
-  let buffer=await file.arrayBuffer();
+  const buffer=await file.arrayBuffer();
 
-  if(ext==='doc'){
+  /* =========================
+     DOCX 新版 Word
+  ========================= */
 
-   message('正在轉換舊版 DOC 成 DOCX...');
+  if(ext==='docx'){
 
-   buffer=await convertDOC(file);
+   message('正在還原 DOCX Word 排版...');
 
-   message('轉換成功，正在還原 Word 排版...');
-  }else{
-
-   message('正在讀取 DOCX 文件...');
-  }
-
-  if(!window.docx || !docx.renderAsync){
-   throw new Error(
-    'DOCX 排版引擎未能載入，請檢查網絡。'
-   );
-  }
-
-  plainMode=false;
-
-  await docx.renderAsync(
-   buffer,
-   viewer,
-   viewer,
-   {
-    className:'docx',
-    inWrapper:true,
-    ignoreWidth:false,
-    ignoreHeight:false,
-    ignoreFonts:false,
-    breakPages:true,
-    ignoreLastRenderedPageBreak:false,
-    experimental:false,
-    trimXmlDeclaration:true,
-    useBase64URL:true,
-    renderChanges:false,
-    renderHeaders:true,
-    renderFooters:true,
-    renderFootnotes:true,
-    renderEndnotes:true
+   if(!window.docx || !docx.renderAsync){
+    throw new Error('DOCX 排版引擎未能載入，請檢查網絡。');
    }
-  );
 
-  fullText=getText();
+   plainMode=false;
 
-  if(!fullText.trim()){
+   await docx.renderAsync(
+    buffer,
+    viewer,
+    viewer,
+    {
+     className:'docx',
+     inWrapper:true,
+     ignoreWidth:false,
+     ignoreHeight:false,
+     ignoreFonts:false,
+     breakPages:true,
+     ignoreLastRenderedPageBreak:false,
+     experimental:false,
+     trimXmlDeclaration:true,
+     useBase64URL:true,
+     renderChanges:false,
+     renderHeaders:true,
+     renderFooters:true,
+     renderFootnotes:true,
+     renderEndnotes:true
+    }
+   );
+
+   fullText=getText();
+
+  }
+
+  /* =========================
+     DOC 舊版 Word
+     使用 JSDoc HTML 格式化輸出
+  ========================= */
+
+  else{
+
+   message('正在解析舊版 DOC 及表格...');
+
+   if(typeof docToText!=='function'){
+    throw new Error('DOC 解析器未能載入，請檢查網絡。');
+   }
+
+   if(typeof docToText.html!=='function'){
+    throw new Error('目前 DOC 解析器版本不支援 HTML 格式輸出。');
+   }
+
+   let result=docToText.html(buffer);
+
+   if(result && typeof result.then==='function'){
+    result=await result;
+   }
+
+   const html=getDocHtml(result);
+
+   if(!html){
+    throw new Error(
+     '無法解析此 DOC 文件，可能是加密、損壞或不支援的舊格式。'
+    );
+   }
+
+   plainMode=false;
+
+   const container=document.createElement('div');
+   container.className='doc-html';
+   container.innerHTML=html;
+
+   viewer.innerHTML='';
+   viewer.appendChild(container);
+
+   /* 如果 HTML 有表格，確保表格可見 */
+
+   const tables=container.querySelectorAll('table');
+
+   tables.forEach(table=>{
+    table.style.maxWidth='100%';
+   });
+
+   fullText=getText();
+
+   if(!fullText.trim() && !tables.length){
+    throw new Error('DOC 文件沒有可讀取的內容。');
+   }
+
+   if(tables.length){
+    message('DOC 載入成功 · 找到 '+tables.length+' 個表格');
+   }
+
+  }
+
+  if(!fullText.trim() && !viewer.querySelector('table')){
    throw new Error('文件沒有可讀取的文字內容。');
   }
 
   $('meta').textContent=
    file.name+' | '+
    (file.size/1024).toFixed(1)+' KB | '+
-   ext.toUpperCase()+
-   (ext==='doc'?' → DOCX':'') ;
+   ext.toUpperCase();
 
   $('search').value='';
 
   zoom=100;
   viewer.style.zoom='1';
-
   $('zoom').textContent='100%';
 
   drop.style.display='none';
   $('paper').style.display='block';
   $('toolbar').style.display='flex';
 
-  message(
-   ext==='doc'?
-   '舊版 DOC 轉換及載入成功！':
-   'DOCX 文件載入成功！'
-  );
+  if(ext==='docx'){
+   message('DOCX 文件載入成功');
+  }else if(!viewer.querySelector('table')){
+   message('DOC 文件載入成功');
+  }
 
  }catch(err){
 
@@ -610,7 +584,9 @@ async function openFile(file){
  }
 }
 
-/* 搜尋 */
+/* =========================
+   搜尋文件文字
+========================= */
 
 $('search').addEventListener('input',()=>{
 
@@ -620,10 +596,7 @@ $('search').addEventListener('input',()=>{
 
  if(!q)return;
 
- const escaped=q.replace(
-  /[.*+?^${}()|[\]\\]/g,'\\$&'
- );
-
+ const escaped=q.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
  const re=new RegExp(escaped,'gi');
 
  const walker=document.createTreeWalker(
@@ -636,7 +609,7 @@ $('search').addEventListener('input',()=>{
      return NodeFilter.FILTER_REJECT;
     }
 
-    if(node.parentElement.closest('mark')){
+    if(node.parentElement.closest('mark,script,style')){
      return NodeFilter.FILTER_REJECT;
     }
 
@@ -724,7 +697,9 @@ function moveSearch(dir){
 $('next').onclick=()=>moveSearch(1);
 $('prev').onclick=()=>moveSearch(-1);
 
-/* 複製全文 */
+/* =========================
+   複製全文
+========================= */
 
 $('copy').onclick=async()=>{
 
@@ -733,13 +708,10 @@ $('copy').onclick=async()=>{
   const text=getText();
 
   if(navigator.clipboard && window.isSecureContext){
-
    await navigator.clipboard.writeText(text);
-
   }else{
 
    const t=document.createElement('textarea');
-
    t.value=text;
 
    document.body.appendChild(t);
@@ -755,16 +727,18 @@ $('copy').onclick=async()=>{
   alert('全文已複製');
 
  }catch(e){
-
   alert('複製失敗，請手動選取文字');
  }
 };
 
-/* 關閉文件 */
+/* =========================
+   關閉文件
+========================= */
 
 $('clear').onclick=()=>{
 
  viewer.innerHTML='';
+ viewer.style.zoom='1';
 
  $('paper').style.display='none';
  $('toolbar').style.display='none';
@@ -783,7 +757,9 @@ $('clear').onclick=()=>{
  message('等待載入文件');
 };
 
-/* 深色模式 */
+/* =========================
+   深色模式
+========================= */
 
 $('themeBtn').onclick=()=>{
 
@@ -794,7 +770,9 @@ $('themeBtn').onclick=()=>{
   '☀️':'🌙';
 };
 
-/* 拖放 */
+/* =========================
+   拖放文件
+========================= */
 
 drop.addEventListener('dragover',e=>{
  e.preventDefault();
